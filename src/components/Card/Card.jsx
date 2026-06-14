@@ -1,24 +1,29 @@
 import './Card.css'
 
-function Card({ bgColor, size = 320, variant = 'default', children }) {
+function Card({ bgColor, size = 320, variant = 'default', children, onClick, onPointerDown, onPointerUp, onPointerLeave }) {
   const isLarge = size === 480
-  const isPlaceholder = variant === 'placeholder'
 
   const className = [
     'card',
     isLarge && 'card--large',
-    isPlaceholder && 'card--placeholder',
   ]
     .filter(Boolean)
     .join(' ')
 
   const style = {}
-  if (!isPlaceholder && bgColor) {
+  if (bgColor) {
     style.background = bgColor
   }
 
   return (
-    <div className={className} style={style}>
+    <div
+      className={className}
+      style={style}
+      onClick={onClick}
+      onPointerDown={onPointerDown}
+      onPointerUp={onPointerUp}
+      onPointerLeave={onPointerLeave}
+    >
       {children}
     </div>
   )

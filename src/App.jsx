@@ -40,7 +40,6 @@ function App() {
       const vh = window.innerHeight
       const ticketX = Math.round((vw - 1280) / 2)
       const ticketY = Math.round((vh - 520) / 2)
-      const scrollX = Math.max(0, gridW - vw + 100)
       const stackItems = stackRefs.current.filter(Boolean)
       const firstTicket = stackItems[0]
 
@@ -60,6 +59,31 @@ function App() {
         '--ticket-y': `${ticketY}px`,
       })
 
+      /* ===== Phase 0: Card Intro ===== */
+      const cards = gsap.utils.toArray('.grid .card')
+      const shuffled = gsap.utils.shuffle([...cards])
+
+      gsap.set(shuffled, { autoAlpha: 0, scale: 0 })
+
+      const introTl = gsap.timeline({ defaults: { ease: 'back.out(1.7)' } })
+
+      shuffled.forEach((card, i) => {
+        const t = i * 0.07
+        introTl.to(card, { autoAlpha: 1, scale: 1, duration: 0.55 }, t)
+
+        const paths = card.querySelectorAll('.graphic-path')
+        paths.forEach((path) => {
+          const len = path.getTotalLength()
+          gsap.set(path, {
+            autoAlpha: 0,
+            strokeDasharray: `${len} ${len * 2}`,
+            strokeDashoffset: len,
+          })
+          introTl.set(path, { autoAlpha: 1, overwrite: false }, t + 0.145)
+          introTl.to(path, { strokeDashoffset: 0, duration: 0.4, ease: 'power2.inOut' }, t + 0.1)
+        })
+      })
+
       const master = gsap.timeline({
         scrollTrigger: {
           trigger: appRef.current,
@@ -71,23 +95,28 @@ function App() {
         defaults: { ease: 'none' },
       })
 
+      const selectCell = grid.querySelector('[data-cell="R2C5"]')
+      const selectedCard = selectCell?.querySelector('.card')
+      const selectedGraphic = selectCell?.querySelector('.graphic')
+      const firstTicketCard = firstTicket?.querySelector('.ticket-left .card')
+      const firstTicketLeft = firstTicket?.querySelector('.ticket-left')
+      const cellLeft = selectCell?.offsetLeft ?? 0
+      const cellTop = selectCell?.offsetTop ?? 0
+      const cellW = selectCell?.offsetWidth ?? 0
+      const cellH = selectCell?.offsetHeight ?? 0
+      const selectedCellCenterX = cellLeft + cellW / 2
+      const maxScrollX = Math.max(0, gridW - vw)
+      const scrollX = selectCell
+        ? gsap.utils.clamp(0, maxScrollX, selectedCellCenterX - vw / 2)
+        : Math.max(0, gridW - vw + 100)
+
       /* ===== Phase 1: Horizontal Grid ===== */
       master.to(grid, { x: -scrollX })
 
       /* ===== Transition: Grid → Ticket ===== */
       master.addLabel('transition')
 
-      const selectCell = grid.querySelector('[data-cell="R2C5"]')
-      const selectedCard = selectCell?.querySelector('.card')
-      const selectedGraphic = selectCell?.querySelector('.graphic')
-      const firstTicketCard = firstTicket?.querySelector('.ticket-left .card')
-      const firstTicketLeft = firstTicket?.querySelector('.ticket-left')
-
       if (selectCell && selectedCard && selectedGraphic && firstTicket && firstTicketCard && firstTicketLeft) {
-        const cellLeft = selectCell.offsetLeft
-        const cellTop = selectCell.offsetTop
-        const cellW = selectCell.offsetWidth
-        const cellH = selectCell.offsetHeight
         const cardTargetSize = 480
         const leftTargetRect = firstTicketLeft.getBoundingClientRect()
         const cardTargetRect = firstTicketCard.getBoundingClientRect()
@@ -101,34 +130,34 @@ function App() {
         const panelTargetTop = leftTargetRect.top
 
         master
-          .to('[data-cell]:not([data-cell="R2C5"])', { autoAlpha: 0, duration: 0.06 }, 'transition')
+          .to('[data-cell]:not([data-cell="R2C5"])', { autoAlpha: 0, duration: 0.12 }, 'transition')
           .to(gridPanel, {
             left: panelTargetLeft,
             top: panelTargetTop,
             width: leftTargetRect.width,
             height: leftTargetRect.height,
             borderRadius: 32,
-            duration: 0.24,
+            duration: 0.48,
             ease: 'power3.inOut',
-          }, 'transition+=0.02')
+          }, 'transition+=0.04')
           .to(grid, {
             x: gridTargetX,
             y: gridTargetY,
-            duration: 0.24,
+            duration: 0.48,
             ease: 'power3.inOut',
-          }, 'transition+=0.02')
+          }, 'transition+=0.04')
           .to(selectedCard, {
             width: cardTargetSize,
             height: cardTargetSize,
             borderRadius: 24,
-            duration: 0.24,
+            duration: 0.48,
             ease: 'power3.inOut',
-          }, 'transition+=0.02')
-          .set(rightPanel, { display: 'flex' }, 'transition+=0.14')
-          .fromTo(rightPanel, { x: vw }, { x: 0, duration: 0.14, ease: 'power3.out' }, 'transition+=0.14')
-          .set(ticketStage, { autoAlpha: 1 }, 'transition+=0.29')
-          .set(firstTicket, { autoAlpha: 1, zIndex: 1 }, 'transition+=0.29')
-          .to([gridPanel, rightPanel], { autoAlpha: 0, duration: 0.04 }, 'transition+=0.31')
+          }, 'transition+=0.04')
+          .set(rightPanel, { display: 'flex' }, 'transition+=0.28')
+          .fromTo(rightPanel, { x: vw }, { x: 0, duration: 0.28, ease: 'power3.out' }, 'transition+=0.28')
+          .set(ticketStage, { autoAlpha: 1 }, 'transition+=0.58')
+          .set(firstTicket, { autoAlpha: 1, zIndex: 1 }, 'transition+=0.58')
+          .to([gridPanel, rightPanel], { autoAlpha: 0, duration: 0.08 }, 'transition+=0.62')
 
         /* ===== Phase 2: Ticket Stack ===== */
         master
@@ -168,30 +197,168 @@ function App() {
 
       /* ===== Phase 3: Scatter ===== */
       master
-        .addLabel('scatter', 'ticket5+=1.05')
-        .to([gridPanel, rightPanel], { autoAlpha: 0, duration: 0.05 }, 'scatter')
-        .to(ticketStageRef.current, { autoAlpha: 0, duration: 0.06 }, 'scatter')
-        .to('.ticket-stack-item', { autoAlpha: 0, duration: 0.06 }, 'scatter')
-        .set(scatterRef.current, { display: 'flex' }, 'scatter+=0.06')
+        .addLabel('scatter', 'ticket5+=2.1')
+        .to([gridPanel, rightPanel], { autoAlpha: 0, duration: 0.15 }, 'scatter')
+        .to(ticketStageRef.current, { autoAlpha: 0, duration: 0.18 }, 'scatter')
+        .to('.ticket-stack-item', { autoAlpha: 0, duration: 0.18 }, 'scatter')
+        .set(scatterRef.current, { display: 'flex' }, 'scatter+=0.18')
 
       const graphics = scatterGraphicsRef.current.filter(Boolean)
       graphics.forEach((el, i) => {
         master.fromTo(
           el,
           { autoAlpha: 0, y: 40, scale: 0.5 },
-          { autoAlpha: 1, y: 0, scale: 1, duration: 0.08 },
-          `scatter+=${0.09 + i * 0.045}`
+          { autoAlpha: 1, y: 0, scale: 1, duration: 0.24 },
+          `scatter+=${0.27 + i * 0.135}`
         )
       })
 
       const logo = logoRef.current
       if (logo) {
-        master.fromTo(logo, { autoAlpha: 0, y: 20 }, { autoAlpha: 1, y: 0, duration: 0.06 }, 'scatter+=0.34')
+        master.fromTo(logo, { autoAlpha: 0, y: 20 }, { autoAlpha: 1, y: 0, duration: 0.18 }, 'scatter+=1.02')
       }
     }, appRef)
 
     return () => ctx.revert()
   }, [])
+
+  const pressMapRef = useRef(new WeakMap())
+  const animationMapRef = useRef(new WeakMap())
+  const pendingPressMapRef = useRef(new WeakMap())
+  const eraseDuration = 0.6
+  const quickPressThreshold = 280
+  const drawRevealDelay = 0.045
+  const eraseHideLead = 0.025
+
+  const getGraphicPaths = (card) => (
+    Array.from(card.querySelectorAll('.graphic-path')).map((path) => {
+      const len = path.getTotalLength()
+      const dash = `${len} ${len * 2}`
+
+      return { path, len, dash }
+    })
+  )
+
+  const setGraphicVisible = (pathData) => {
+    pathData.forEach(({ path, dash }) => {
+      gsap.set(path, {
+        autoAlpha: 1,
+        strokeDasharray: dash,
+        strokeDashoffset: 0,
+      })
+    })
+  }
+
+  const setGraphicHiddenForDraw = (pathData) => {
+    pathData.forEach(({ path, len, dash }) => {
+      gsap.set(path, {
+        autoAlpha: 0,
+        strokeDasharray: dash,
+        strokeDashoffset: len,
+      })
+    })
+  }
+
+  const addGraphicErase = (tl, pathData, at = 0, duration = 0.6) => {
+    pathData.forEach(({ path, len }) => {
+      tl.to(path, {
+        strokeDashoffset: -len,
+        duration,
+        ease: 'power2.inOut',
+      }, at)
+    })
+  }
+
+  const addGraphicDraw = (tl, pathData, at = 0, duration = 0.4) => {
+    tl.set(pathData.map(({ path }) => path), { autoAlpha: 1, overwrite: false }, at + drawRevealDelay)
+    pathData.forEach(({ path }) => {
+      tl.to(path, {
+        strokeDashoffset: 0,
+        duration,
+        ease: 'power2.inOut',
+      }, at)
+    })
+  }
+
+  const startPressAnimation = (card) => {
+    gsap.killTweensOf(card)
+
+    const pathData = getGraphicPaths(card)
+    pathData.forEach(({ path }) => gsap.killTweensOf(path))
+    setGraphicVisible(pathData)
+
+    const tl = gsap.timeline({ defaults: { overwrite: 'auto' } })
+    tl.to(card, { scale: 1.18, duration: eraseDuration, ease: 'power2.out' }, 0)
+    addGraphicErase(tl, pathData, 0, eraseDuration)
+    tl.set(pathData.map(({ path }) => path), { autoAlpha: 0, overwrite: false }, eraseDuration - eraseHideLead)
+
+    pressMapRef.current.set(card, { tl, pathData, startTime: Date.now() })
+    animationMapRef.current.set(card, tl)
+  }
+
+  const handlePointerDown = (e) => {
+    const card = e.currentTarget
+
+    if (animationMapRef.current.has(card)) {
+      pendingPressMapRef.current.set(card, { pointerId: e.pointerId })
+      return
+    }
+
+    startPressAnimation(card)
+  }
+
+  const handlePointerUp = (e) => {
+    const card = e.currentTarget
+    const pendingPress = pendingPressMapRef.current.get(card)
+
+    if (pendingPress?.pointerId === e.pointerId) {
+      pendingPressMapRef.current.delete(card)
+      return
+    }
+
+    const state = pressMapRef.current.get(card)
+    if (!state) return
+    pressMapRef.current.delete(card)
+
+    state.tl.kill()
+    const elapsed = Date.now() - state.startTime
+    const remainingErase = Math.max(0, eraseDuration - elapsed / 1000)
+    const isQuickPress = elapsed < quickPressThreshold
+    const releaseEraseDuration = isQuickPress
+      ? Math.min(0.24, remainingErase * 0.52)
+      : remainingErase
+    const drawStart = releaseEraseDuration + 0.025
+    const paths = state.pathData.map(({ path }) => path)
+
+    const tl = gsap.timeline({
+      defaults: { overwrite: 'auto' },
+      onComplete: () => {
+        if (animationMapRef.current.get(card) === tl) {
+          animationMapRef.current.delete(card)
+        }
+
+        if (pendingPressMapRef.current.has(card)) {
+          pendingPressMapRef.current.delete(card)
+          startPressAnimation(card)
+        }
+      },
+    })
+    animationMapRef.current.set(card, tl)
+
+    if (releaseEraseDuration > 0.02) {
+      tl.to(card, { scale: 1.18, duration: releaseEraseDuration, ease: 'power2.out' }, 0)
+      addGraphicErase(tl, state.pathData, 0, releaseEraseDuration)
+    }
+
+    tl.set(paths, { autoAlpha: 0, overwrite: false }, Math.max(0, releaseEraseDuration - eraseHideLead))
+    tl.add(() => setGraphicHiddenForDraw(state.pathData), drawStart)
+    addGraphicDraw(tl, state.pathData, drawStart, 0.4)
+    tl.to(card, { scale: 1, duration: 0.46, ease: 'back.out(2.1)' }, drawStart)
+  }
+
+  const handlePointerLeave = (e) => {
+    handlePointerUp(e)
+  }
 
   const setStackRef = (i) => (el) => { stackRefs.current[i] = el }
   const setScatterRef = (i) => (el) => { scatterGraphicsRef.current[i] = el }
@@ -214,11 +381,16 @@ function App() {
                     data-cell={cell.key}
                   >
                     {cfg.type !== 'empty' && cfg.type !== 'placeholder' && (
-                      <Card bgColor={cfg.bgColor}>
+                      <Card
+                        bgColor={cfg.bgColor}
+                        onPointerDown={handlePointerDown}
+                        onPointerUp={handlePointerUp}
+                        onPointerLeave={handlePointerLeave}
+                      >
                         <Graphic name={cfg.graphic} />
                       </Card>
                     )}
-                    {cfg.type === 'placeholder' && <Card variant="placeholder" />}
+                    {cfg.type === 'placeholder' && <Card bgColor="#BBBBBB" />}
                   </div>
                 )
               })}

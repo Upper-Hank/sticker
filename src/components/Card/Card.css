@@ -8,15 +8,11 @@
   border-radius: 20px;
   box-sizing: border-box;
   flex-shrink: 0;
+  will-change: transform, opacity;
 }
 
 .card--large {
   width: 480px;
   height: 480px;
   border-radius: 24px;
-}
-
-.card--placeholder {
-  border: 12px dashed #BBB;
-  background: transparent !important;
 }
