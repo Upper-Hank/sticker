@@ -1,0 +1,62 @@
+[
+  {
+    "id": "U",
+    "graphic": "U",
+    "bgColor": "#FF5254",
+    "title": "Valley",
+    "letter": "u",
+    "intro": [
+      "The beginning is not a point",
+      "It is a curve waiting to rise"
+    ],
+    "logo": "logo"
+  },
+  {
+    "id": "P1",
+    "graphic": "P1",
+    "bgColor": "#FFD75E",
+    "title": "Reverie",
+    "letter": "p",
+    "intro": [
+      "We hold a small loop of thought",
+      "Then turn it into direction"
+    ],
+    "logo": "logo"
+  },
+  {
+    "id": "P2",
+    "graphic": "P2",
+    "bgColor": "#63E8BA",
+    "title": "Reprise",
+    "letter": "p",
+    "intro": [
+      "To repeat is not to return",
+      "We advance through twists and turns"
+    ],
+    "logo": "logo"
+  },
+  {
+    "id": "E",
+    "graphic": "E",
+    "bgColor": "#6ECAFF",
+    "title": "Detour",
+    "letter": "e",
+    "intro": [
+      "There is no straight path in the world",
+      "We advance through twists and turns"
+    ],
+    "logo": "logo"
+  },
+  {
+    "id": "R",
+    "graphic": "R",
+    "bgColor": "#A58AE8",
+    "title": "Trace",
+    "letter": "r",
+    "intro": [
+      "Every turn leaves a trace",
+      "Every trace points upward"
+    ],
+    "logo": "logo"
+  }
+]

@@ -1,0 +1,82 @@
+.ticket {
+  display: flex;
+}
+
+.ticket-left {
+  display: flex;
+  width: 520px;
+  height: 520px;
+  padding: 20px;
+  justify-content: center;
+  align-items: center;
+  border-radius: 32px;
+  background: #EFEFE7;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+.ticket-right {
+  display: flex;
+  width: 760px;
+  padding: 30px 34px 30px 40px;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-start;
+  border-radius: 32px;
+  background: #EFEFE7;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+.ticket-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.ticket-title {
+  color: #535353;
+  font-family: "IBM Plex Serif", serif;
+  font-size: 120px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 120px;
+  text-transform: capitalize;
+}
+
+.ticket-letter {
+  color: #535353;
+  font-family: "IBM Plex Sans", sans-serif;
+  font-size: 120px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 120px;
+}
+
+.ticket-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  width: 100%;
+}
+
+.ticket-intro {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.ticket-intro-line {
+  color: #313131;
+  font-family: "IBM Plex Sans", sans-serif;
+  font-size: 30px;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 30px;
+}
+
+.ticket-logo {
+  flex-shrink: 0;
+}
