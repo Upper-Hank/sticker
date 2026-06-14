@@ -1,6 +1,8 @@
 import { useRef, useLayoutEffect } from 'react'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
+import { Draggable } from 'gsap/Draggable'
+import { InertiaPlugin } from 'gsap/InertiaPlugin'
 import { cells, getCellConfig } from './data/gridConfig'
 import tickets from './data/tickets.json'
 import Card from './components/Card/Card'
@@ -8,7 +10,7 @@ import Graphic from './components/Graphic/Graphic'
 import Ticket from './components/Ticket/Ticket'
 import './App.css'
 
-gsap.registerPlugin(ScrollTrigger)
+gsap.registerPlugin(ScrollTrigger, Draggable, InertiaPlugin)
 
 function App() {
   const appRef = useRef(null)
@@ -22,6 +24,8 @@ function App() {
   const scatterRef = useRef(null)
   const scatterGraphicsRef = useRef([])
   const logoRef = useRef(null)
+  const draggableInstancesRef = useRef([])
+  const draggableInitedRef = useRef(false)
 
   const totalScroll = 12000
   const gridW = 2920
@@ -91,6 +95,23 @@ function App() {
           end: `+=${totalScroll}`,
           pin: true,
           scrub: 0.6,
+          onUpdate(self) {
+            if (self.progress >= 0.96 && !draggableInitedRef.current) {
+              draggableInitedRef.current = true
+              const els = scatterGraphicsRef.current.filter(Boolean)
+              draggableInstancesRef.current = els.map(el =>
+                Draggable.create(el, {
+                  type: 'x,y',
+                  bounds: scatterRef.current,
+                  inertia: true,
+                  edgeResistance: 0.5,
+                  onDragStart() {
+                    gsap.set(el, { zIndex: 100 })
+                  },
+                })
+              )
+            }
+          },
         },
         defaults: { ease: 'none' },
       })
@@ -219,7 +240,11 @@ function App() {
       }
     }, appRef)
 
-    return () => ctx.revert()
+    return () => {
+      draggableInstancesRef.current.forEach(d => d[0]?.kill())
+      draggableInitedRef.current = false
+      ctx.revert()
+    }
   }, [])
 
   const pressMapRef = useRef(new WeakMap())
