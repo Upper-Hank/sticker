@@ -122,8 +122,8 @@ function DesktopApp() {
             strokeDasharray: `${len} ${len * 2}`,
             strokeDashoffset: len,
           })
-          introTl.set(path, { autoAlpha: 1, overwrite: false }, t + 0.145)
-          introTl.to(path, { strokeDashoffset: 0, duration: 0.4, ease: 'power2.inOut' }, t + 0.1)
+          introTl.set(path, { autoAlpha: 1, overwrite: false }, t + 0.38)
+          introTl.to(path, { strokeDashoffset: 0, duration: 0.4, ease: 'power2.inOut' }, t + 0.35)
         })
       })
 
@@ -522,8 +522,8 @@ function DesktopApp() {
             newIntroTl.to(card, { autoAlpha: 1, scale: 1, duration: 0.55 }, t)
             const paths = card.querySelectorAll('.graphic-path')
             paths.forEach((path) => {
-              newIntroTl.set(path, { autoAlpha: 1, overwrite: false }, t + 0.145)
-              newIntroTl.to(path, { strokeDashoffset: 0, duration: 0.4, ease: 'power2.inOut' }, t + 0.1)
+              newIntroTl.set(path, { autoAlpha: 1, overwrite: false }, t + 0.38)
+              newIntroTl.to(path, { strokeDashoffset: 0, duration: 0.4, ease: 'power2.inOut' }, t + 0.35)
             })
           })
         }
@@ -639,8 +639,9 @@ function DesktopApp() {
         if (s.phase !== 'grid') return
 
         e.preventDefault()
-        if (s.gridProgress >= 1 && e.deltaY > 0) return
-        setHorizontalTarget(horizontalState.targetProgress + e.deltaY * WHEEL_SENSITIVITY)
+        const effectiveDelta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY
+        if (s.gridProgress >= 1 && effectiveDelta > 0) return
+        setHorizontalTarget(horizontalState.targetProgress + effectiveDelta * WHEEL_SENSITIVITY)
       }
 
       window.addEventListener('wheel', handleWheel, { passive: false })
