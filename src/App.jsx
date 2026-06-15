@@ -111,7 +111,7 @@ function DesktopApp() {
       introTlRef.current = introTl
 
       shuffled.forEach((card, i) => {
-        const t = i * 0.07
+        const t = i * 0.04
         introTl.to(card, { autoAlpha: 1, scale: 1, duration: 0.55 }, t)
 
         const paths = card.querySelectorAll('.graphic-path')
@@ -518,7 +518,7 @@ function DesktopApp() {
           introTlRef.current = newIntroTl
 
           shuffled.forEach((card, i) => {
-            const t = i * 0.07
+            const t = i * 0.04
             newIntroTl.to(card, { autoAlpha: 1, scale: 1, duration: 0.55 }, t)
             const paths = card.querySelectorAll('.graphic-path')
             paths.forEach((path) => {
