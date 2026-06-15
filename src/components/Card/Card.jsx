@@ -1,6 +1,6 @@
 import './Card.css'
 
-function Card({ bgColor, size = 320, variant = 'default', children, onClick, onPointerDown, onPointerUp, onPointerLeave }) {
+function Card({ bgColor, size = 320, children, onClick, onPointerDown, onPointerUp, onPointerLeave }) {
   const isLarge = size === 480
 
   const className = [

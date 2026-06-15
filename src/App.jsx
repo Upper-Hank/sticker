@@ -224,7 +224,11 @@ function App() {
         .to('.ticket-stack-item', { autoAlpha: 0, duration: 0.18 }, 'scatter')
         .set(scatterRef.current, { display: 'flex' }, 'scatter+=0.18')
 
-      const graphics = scatterGraphicsRef.current.filter(Boolean)
+      const graphics = scatterGraphicsRef.current
+        .filter(Boolean)
+        .map(el => el.querySelector('.scatter-graphic-inner'))
+        .filter(Boolean)
+
       graphics.forEach((el, i) => {
         master.fromTo(
           el,
@@ -460,7 +464,9 @@ function App() {
           <div className="scatter-letters">
             {['U', 'P', 'P', 'E', 'R'].map((letter, i) => (
               <div className="scatter-graphic" key={`${letter}-${i}`} ref={setScatterRef(i)}>
-                <Graphic name={tickets[i].graphic} size={200} />
+                <div className="scatter-graphic-inner">
+                  <Graphic name={tickets[i].graphic} size={200} />
+                </div>
               </div>
             ))}
           </div>
