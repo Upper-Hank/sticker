@@ -441,10 +441,11 @@ function App() {
           .map(el => el.querySelector('.scatter-graphic-inner'))
           .filter(Boolean)
 
-        const playIntroFromStart = () => {
+        const resetGridForIntro = () => {
           stopHorizontalDamping()
 
           tl1to2.pause(0)
+          tl1to2.invalidate()
           ticketStepTls.forEach(tl => tl.pause(0))
           tl3to4.pause(0)
 
@@ -471,9 +472,14 @@ function App() {
           setIsAnimating(false)
 
           const cards = gsap.utils.toArray('.grid .card')
-          gsap.killTweensOf(cards)
+          gsap.killTweensOf(cards, 'autoAlpha,scale')
           cards.forEach((card) => {
-            gsap.set(card, { clearProps: 'autoAlpha,scale,width,height,borderRadius' })
+            gsap.set(card, {
+              width: '',
+              height: '',
+              borderRadius: '',
+              clearProps: 'autoAlpha,scale,transform',
+            })
             const paths = card.querySelectorAll('.graphic-path')
             paths.forEach((path) => {
               gsap.killTweensOf(path)
@@ -486,7 +492,10 @@ function App() {
             })
           })
           gsap.set(cards, { autoAlpha: 0, scale: 0 })
+        }
 
+        const playIntroFromStart = () => {
+          const cards = gsap.utils.toArray('.grid .card')
           const shuffled = gsap.utils.shuffle([...cards])
           const newIntroTl = gsap.timeline({
             defaults: { ease: 'back.out(1.7)' },
@@ -529,10 +538,16 @@ function App() {
         })
 
         restartTl.to(stage, {
-          backgroundColor: '#E2DFD0',
+          backgroundColor: '#EFEFE7',
           duration: 0.45,
           ease: 'power2.inOut',
         }, lastDelay + 0.15)
+        restartTl.call(resetGridForIntro)
+        restartTl.to(stage, {
+          backgroundColor: '#E2DFD0',
+          duration: 0.28,
+          ease: 'power2.inOut',
+        })
         restartTl.call(playIntroFromStart)
       }
 
