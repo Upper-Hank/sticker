@@ -10,7 +10,9 @@ import Card from './components/Card/Card'
 import Graphic from './components/Graphic/Graphic'
 import Ticket from './components/Ticket/Ticket'
 import AnimationController from './components/AnimationController/AnimationController'
+import MobileView from './components/MobileView/MobileView'
 import { useAnimationState } from './hooks/useAnimationState'
+import { useIsMobile } from './hooks/useIsMobile'
 import './App.css'
 
 gsap.registerPlugin(ScrollTrigger, ScrollToPlugin, Draggable, InertiaPlugin)
@@ -20,6 +22,16 @@ const WHEEL_SENSITIVITY = 0.00045
 const PROGRESS_EASE = 0.14
 
 function App() {
+  const isMobile = useIsMobile()
+
+  if (isMobile) {
+    return <MobileView />
+  }
+
+  return <DesktopApp />
+}
+
+function DesktopApp() {
   const appRef = useRef(null)
   const stageRef = useRef(null)
   const gridPanelRef = useRef(null)
