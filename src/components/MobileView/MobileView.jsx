@@ -10,61 +10,217 @@ gsap.registerPlugin(Draggable, InertiaPlugin)
 
 const graphicsList = tickets.map(t => t.graphic)
 const GRAPHIC_SIZE = 100
+const MESSAGE = 'Please open on desktop'
+const SUB_MESSAGE = 'or you can drag these stickers'
+const LOGO_SIZE = 30
+const LOGO_INITIAL_SCALE = 80 / LOGO_SIZE
+
+function calculatePositions(count, vw, vh, size) {
+  const margin = 24
+  const availW = vw - margin * 2
+  const topArea = vh * 0.38
+
+  const rows = count <= 4
+    ? [{ cols: count, y: topArea / 2 }]
+    : [
+      { cols: 3, y: topArea * 0.35 },
+      { cols: count - 3, y: topArea * 0.78 },
+    ]
+
+  const positions = []
+  let idx = 0
+
+  for (const row of rows) {
+    const spacing = availW / (row.cols + 1)
+    for (let c = 0; c < row.cols && idx < count; c++) {
+      positions.push({
+        left: margin + spacing * (c + 1) - size / 2,
+        top: row.y - size / 2,
+      })
+      idx++
+    }
+  }
+
+  return positions
+}
 
 function MobileView() {
   const viewRef = useRef(null)
-  const draggableRefs = useRef([])
+  const logoRef = useRef(null)
+  const messageRef = useRef(null)
+  const subMessageRef = useRef(null)
+  const graphicsWrapperRef = useRef(null)
+  const draggableInstancesRef = useRef([])
 
   useLayoutEffect(() => {
     const view = viewRef.current
     if (!view) return
 
-    const vw = view.clientWidth
-    const vh = view.clientHeight
-    const maxX = vw - GRAPHIC_SIZE
-    const maxY = vh - GRAPHIC_SIZE
-
     const ctx = gsap.context(() => {
-      const els = draggableRefs.current.filter(Boolean)
+      const vw = view.clientWidth
+      const vh = view.clientHeight
 
-      els.forEach(el => {
-        const randX = gsap.utils.random(0, maxX)
-        const randY = gsap.utils.random(0, maxY)
-        gsap.set(el, { x: randX, y: randY })
+      const initialScale = LOGO_INITIAL_SCALE
+      const centerX = (vw - LOGO_SIZE) / 2
+      const centerY = (vh - LOGO_SIZE) / 2
+      const logoBottomY = vh - 48 - LOGO_SIZE
 
-        Draggable.create(el, {
-          type: 'x,y',
-          bounds: view,
-          inertia: true,
-          edgeResistance: 0.5,
-          onDragStart() {
-            gsap.set(el, { zIndex: 100 })
-          },
+      const logoEl = logoRef.current
+      const logoPaths = logoEl
+        ? Array.from(logoEl.querySelectorAll('.graphic-path'))
+        : []
+      const bodyPath = logoPaths[0]
+      const tickPath = logoPaths[1]
+
+      logoPaths.forEach((path) => {
+        const len = path.getTotalLength()
+        if (!len) return
+        gsap.set(path, {
+          autoAlpha: 0,
+          strokeDasharray: `${len} ${len * 2}`,
+          strokeDashoffset: len,
         })
       })
+
+      gsap.set(logoEl, {
+        position: 'absolute',
+        left: centerX,
+        top: centerY,
+        scale: initialScale,
+      })
+
+      const chars = messageRef.current?.querySelectorAll('.mobile-char')
+      const subChars = subMessageRef.current?.querySelectorAll('.mobile-char')
+      gsap.set(chars, { autoAlpha: 0, y: 8 })
+      gsap.set(subChars, { autoAlpha: 0, y: 8 })
+
+      const graphics = graphicsWrapperRef.current?.querySelectorAll('.mobile-graphic')
+      const graphicsArray = Array.from(graphics)
+      const positions = calculatePositions(graphicsArray.length, vw, vh, GRAPHIC_SIZE)
+
+      graphicsArray.forEach((el, i) => {
+        gsap.set(el, { left: positions[i].left, top: positions[i].top })
+      })
+      gsap.set(graphics, { autoAlpha: 0, scale: 0 })
+
+      const tl = gsap.timeline({ defaults: { ease: 'power2.inOut' } })
+
+      const bodyDuration = 0.5
+      const tickDuration = 0.35
+      let strokeEnd = 0
+
+      if (bodyPath) {
+        tl.set(bodyPath, { autoAlpha: 1 }, 0)
+        tl.to(bodyPath, {
+          strokeDashoffset: 0,
+          duration: bodyDuration,
+          ease: 'power3.in',
+        }, 0)
+
+        strokeEnd = bodyDuration
+
+        if (tickPath) {
+          tl.set(tickPath, { autoAlpha: 1 }, strokeEnd + 0.05)
+          tl.to(tickPath, {
+            strokeDashoffset: 0,
+            duration: tickDuration,
+            ease: 'power3.out',
+          }, strokeEnd + 0.05)
+
+          strokeEnd += 0.05 + tickDuration
+        }
+      }
+
+      tl.to(logoEl, {
+        top: logoBottomY,
+        scale: 1,
+        duration: 0.55,
+        ease: 'power3.inOut',
+      }, strokeEnd + 0.3)
+
+      const textStart = strokeEnd + 0.5
+      const allChars = [...(chars || []), ...(subChars || [])]
+
+      if (allChars.length) {
+        tl.to(allChars, {
+          autoAlpha: 1,
+          y: 0,
+          duration: 0.45,
+          stagger: 0.05,
+          ease: 'power2.out',
+        }, textStart)
+      }
+
+      const textDuration = allChars.length ? (allChars.length - 1) * 0.05 + 0.45 : 0
+      const graphicsStart = textStart + textDuration + 0.15
+
+      if (graphics && graphics.length) {
+        tl.to(graphics, {
+          autoAlpha: 1,
+          scale: 1,
+          duration: 0.4,
+          stagger: 0.12,
+          ease: 'back.out(1.7)',
+        }, graphicsStart)
+      }
+
+      const lastGraphicDelay = graphics
+        ? (graphics.length - 1) * 0.12 + 0.4
+        : 0
+      const draggableStart = graphicsStart + lastGraphicDelay
+
+      tl.call(() => {
+        let dragZIndex = 0
+        draggableInstancesRef.current = graphicsArray.map(el =>
+          Draggable.create(el, {
+            type: 'left,top',
+            bounds: view,
+            inertia: true,
+            edgeResistance: 0.5,
+            zIndexBoost: false,
+            onDragStart() {
+              dragZIndex += 1
+              gsap.set(el, { zIndex: dragZIndex })
+            },
+          })
+        )
+      }, [], draggableStart)
     }, viewRef)
 
-    return () => ctx.revert()
+    return () => {
+      draggableInstancesRef.current.forEach(d => d[0]?.kill())
+      draggableInstancesRef.current = []
+      ctx.revert()
+    }
   }, [])
 
-  const setDraggableRef = (i) => (el) => {
-    draggableRefs.current[i] = el
-  }
+  const renderMessage = (text) =>
+    text.split(' ').map((word, i, arr) => (
+      <span key={i} className="mobile-char">
+        {word}{i < arr.length - 1 ? '\u00A0' : ''}
+      </span>
+    ))
 
   return (
     <div className="mobile-view" ref={viewRef}>
-      {graphicsList.map((name, i) => (
-        <div
-          key={`${name}-${i}`}
-          className="mobile-graphic"
-          ref={setDraggableRef(i)}
-        >
-          <Graphic name={name} size={GRAPHIC_SIZE} />
-        </div>
-      ))}
-      <p className="mobile-message">Coming soon to mobile</p>
-      <div className="mobile-logo">
-        <Graphic name="logo" size={40} />
+      <div className="mobile-logo" ref={logoRef}>
+        <Graphic name="logo" size={LOGO_SIZE} />
+      </div>
+      <p className="mobile-message" ref={messageRef}>
+        {renderMessage(MESSAGE)}
+      </p>
+      <p className="mobile-message mobile-message--sub" ref={subMessageRef}>
+        {renderMessage(SUB_MESSAGE)}
+      </p>
+      <div className="mobile-graphics" ref={graphicsWrapperRef}>
+        {graphicsList.map((name, i) => (
+          <div
+            key={`${name}-${i}`}
+            className="mobile-graphic"
+          >
+            <Graphic name={name} size={GRAPHIC_SIZE} />
+          </div>
+        ))}
       </div>
     </div>
   )

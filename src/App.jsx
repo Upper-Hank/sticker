@@ -45,6 +45,7 @@ function DesktopApp() {
   const draggableInstancesRef = useRef([])
   const draggableInitedRef = useRef(false)
   const scatterPositionsRef = useRef([])
+  const dragZIndexRef = useRef(0)
 
   const {
     phase, gridProgress, ticketIndex, isAnimating,
@@ -297,8 +298,10 @@ function DesktopApp() {
               bounds: scatterRef.current,
               inertia: true,
               edgeResistance: 0.5,
+              zIndexBoost: false,
               onDragStart() {
-                gsap.set(el, { zIndex: 100 })
+                dragZIndexRef.current += 1
+                gsap.set(el, { zIndex: dragZIndexRef.current })
               },
             })
           )

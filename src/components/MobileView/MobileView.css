@@ -10,10 +10,21 @@
   z-index: 1000;
 }
 
+.mobile-logo {
+  position: absolute;
+  z-index: 2;
+  will-change: transform, top;
+  transform-origin: center center;
+}
+
+.mobile-graphics {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+}
+
 .mobile-graphic {
   position: absolute;
-  top: 0;
-  left: 0;
   cursor: grab;
   user-select: none;
   touch-action: none;
@@ -24,20 +35,26 @@
 }
 
 .mobile-message {
+  position: absolute;
+  top: 45%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   color: #535353;
   font-family: "IBM Plex Serif", serif;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 400;
   text-align: center;
   margin: 0;
-  z-index: 1;
+  z-index: 2;
   pointer-events: none;
+  white-space: nowrap;
 }
 
-.mobile-logo {
-  position: absolute;
-  bottom: 32px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 1;
+.mobile-message--sub {
+  top: 50%;
+  font-size: 13px;
+}
+
+.mobile-char {
+  display: inline-block;
 }
