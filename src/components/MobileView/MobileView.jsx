@@ -18,13 +18,14 @@ const LOGO_INITIAL_SCALE = 80 / LOGO_SIZE
 function calculatePositions(count, vw, vh, size) {
   const margin = 24
   const availW = vw - margin * 2
-  const topArea = vh * 0.38
+  const centerY = vh * 0.48
+  const rowGap = size * 1.3
 
   const rows = count <= 4
-    ? [{ cols: count, y: topArea / 2 }]
+    ? [{ cols: count, y: centerY }]
     : [
-      { cols: 3, y: topArea * 0.35 },
-      { cols: count - 3, y: topArea * 0.78 },
+      { cols: 3, y: centerY - rowGap / 2 },
+      { cols: count - 3, y: centerY + rowGap / 2 },
     ]
 
   const positions = []
@@ -152,7 +153,23 @@ function MobileView() {
       }
 
       const textDuration = allChars.length ? (allChars.length - 1) * 0.05 + 0.45 : 0
-      const graphicsStart = textStart + textDuration + 0.15
+
+      const textMoveStart = textStart + textDuration + 0.25
+      const textMoveTargetY = logoBottomY - LOGO_SIZE - 22
+
+      tl.to(messageRef.current, {
+        top: textMoveTargetY,
+        duration: 0.5,
+        ease: 'power2.inOut',
+      }, textMoveStart)
+
+      tl.to(subMessageRef.current, {
+        top: textMoveTargetY + 22,
+        duration: 0.5,
+        ease: 'power2.inOut',
+      }, textMoveStart)
+
+      const graphicsStart = textMoveStart + 0.5 + 0.2
 
       if (graphics && graphics.length) {
         tl.to(graphics, {

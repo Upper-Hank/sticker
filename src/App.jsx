@@ -280,10 +280,12 @@ function DesktopApp() {
 
       gsap.set(graphics, { autoAlpha: 0, y: 40, scale: 0.5 })
 
+      const scatterArcY = [0, -24, -52, -24, 0]
+
       graphics.forEach((el, i) => {
         tl3to4.fromTo(el,
           { autoAlpha: 0, y: 40, scale: 0.5 },
-          { autoAlpha: 1, y: 0, scale: 1, duration: 0.24, immediateRender: false },
+          { autoAlpha: 1, y: scatterArcY[i], scale: 1, duration: 0.24, immediateRender: false },
           0.27 + i * 0.135
         )
       })
