@@ -368,6 +368,16 @@ function DesktopApp() {
         setIsAnimating(true)
         stopHorizontalDamping()
 
+        // The intro and pointer interactions also animate the card's scale.
+        // Normalize that shared transform state before the transition owns it.
+        introTlRef.current?.killTweensOf(selectedCard)
+        animationMapRef.current.get(selectedCard)?.kill()
+        animationMapRef.current.delete(selectedCard)
+        pressMapRef.current.delete(selectedCard)
+        pendingPressMapRef.current.delete(selectedCard)
+        gsap.killTweensOf(selectedCard, 'scale')
+        gsap.set(selectedCard, { scale: 1 })
+
         const origComplete = tl1to2.eventCallback('onComplete')
         tl1to2.eventCallback('onComplete', () => {
           tl1to2.eventCallback('onComplete', origComplete)
@@ -767,6 +777,8 @@ function DesktopApp() {
   }
 
   const handlePointerDown = (e) => {
+    if (stateRef.current.isAnimating || stateRef.current.phase !== 'grid') return
+
     const card = e.currentTarget
 
     if (animationMapRef.current.has(card)) {
@@ -779,6 +791,12 @@ function DesktopApp() {
 
   const handlePointerUp = (e) => {
     const card = e.currentTarget
+
+    if (stateRef.current.isAnimating || stateRef.current.phase !== 'grid') {
+      pendingPressMapRef.current.delete(card)
+      return
+    }
+
     const pendingPress = pendingPressMapRef.current.get(card)
 
     if (pendingPress?.pointerId === e.pointerId) {
