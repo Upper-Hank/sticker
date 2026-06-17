@@ -3,13 +3,19 @@ import Graphic from '../Graphic/Graphic'
 import Logo from '../Graphic/Graphic'
 import './Ticket.css'
 
-function Ticket({ data }) {
+function Ticket({ data, onCardPointerDown, onCardPointerUp, onCardPointerLeave }) {
   const { bgColor, title, letter, intro, graphic, logo } = data
 
   return (
     <article className="ticket">
       <div className="ticket-left">
-        <Card bgColor={bgColor} size={480}>
+        <Card
+          bgColor={bgColor}
+          size={480}
+          onPointerDown={onCardPointerDown}
+          onPointerUp={onCardPointerUp}
+          onPointerLeave={onCardPointerLeave}
+        >
           <Graphic name={graphic} />
         </Card>
       </div>

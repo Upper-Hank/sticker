@@ -4,7 +4,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { ScrollToPlugin } from 'gsap/ScrollToPlugin'
 import { Draggable } from 'gsap/Draggable'
 import { InertiaPlugin } from 'gsap/InertiaPlugin'
-import { cells, getCellConfig, selectedCard as selectedCardKey } from './data/gridConfig'
+import { cells, getCellConfig, textBlocks, selectedCard as selectedCardKey } from './data/gridConfig'
 import tickets from './data/tickets.json'
 import Card from './components/Card/Card'
 import Graphic from './components/Graphic/Graphic'
@@ -110,6 +110,7 @@ function DesktopApp() {
         defaults: { ease: 'back.out(1.7)' },
         onComplete() {
           scrollBaseRef.current = window.scrollY
+          revealVisibleTextBlocks()
         },
       })
       introTlRef.current = introTl
@@ -133,6 +134,36 @@ function DesktopApp() {
 
         introTl.set(card, { willChange: 'auto', clearProps: 'willChange' }, t + 0.8)
       })
+
+      const textBlocksEls = gsap.utils.toArray('.grid-text')
+      let revealedTextBlocks = new WeakSet()
+      let hasStartedScrolling = false
+
+      gsap.set('.grid-text-word', { autoAlpha: 0, y: 8 })
+
+      const revealVisibleTextBlocks = () => {
+        textBlocksEls.forEach((block) => {
+          if (revealedTextBlocks.has(block)) return
+
+          const rect = block.getBoundingClientRect()
+          const isVisible = (
+            rect.left < vw
+            && rect.right > 0
+            && rect.top < vh
+            && rect.bottom > 0
+          )
+          if (!isVisible) return
+
+          revealedTextBlocks.add(block)
+          gsap.to(block.querySelectorAll('.grid-text-word'), {
+            autoAlpha: 1,
+            y: 0,
+            duration: 0.45,
+            stagger: 0.05,
+            ease: 'power2.out',
+          })
+        })
+      }
 
       /* ===== Target cell & layout values ===== */
       const selectCell = grid.querySelector(`[data-cell="${selectedCardKey}"]`)
@@ -173,6 +204,7 @@ function DesktopApp() {
       const renderHorizontalGrid = (nextProgress) => {
         horizontalState.progress = nextProgress
         gsap.set(grid, { y: 0, x: stepGridTargetX * nextProgress })
+        if (hasStartedScrolling) revealVisibleTextBlocks()
         return nextProgress
       }
 
@@ -198,7 +230,7 @@ function DesktopApp() {
 
         tl1to2
           .set([gridPanel, selectedCard], { willChange: 'transform, width, height, border-radius, opacity' }, 0)
-          .to(`[data-cell]:not([data-cell="${selectedCardKey}"])`, { autoAlpha: 0, duration: 0.12 }, 0)
+          .to(`[data-cell]:not([data-cell="${selectedCardKey}"]), .grid-text`, { autoAlpha: 0, duration: 0.12 }, 0)
           .to(gridPanel, {
             left: panelTargetLeft,
             top: panelTargetTop,
@@ -222,7 +254,7 @@ function DesktopApp() {
             ease: 'power3.inOut',
           }, 0.04)
           .call(() => { rightPanel.style.display = 'flex' }, [], 0.28)
-          .set(rightPanel, { willChange: 'transform' }, 0.28)
+          .set(rightPanel, { autoAlpha: 1, willChange: 'transform' }, 0.28)
           .fromTo(rightPanel, { x: vw }, { x: 0, duration: 0.28, ease: 'power3.out' }, 0.28)
           .fromTo(ticketStage, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.02 }, 0.58)
           .fromTo(firstTicket, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.02 }, 0.58)
@@ -490,11 +522,11 @@ function DesktopApp() {
           scatterEls.forEach(el => gsap.set(el, { x: 0, y: 0, zIndex: 'auto' }))
           scatterPositionsRef.current = []
 
-          gsap.set(gridPanel, { clearProps: 'left,top,width,height,borderRadius,autoAlpha' })
+          gsap.set(gridPanel, { clearProps: 'left,top,width,height,borderRadius,opacity,visibility' })
           gsap.set(gridPanel, { autoAlpha: 1 })
-          gsap.set('[data-cell]', { clearProps: 'autoAlpha' })
+          gsap.set('[data-cell]', { clearProps: 'opacity,visibility' })
           gsap.set(grid, { x: 0, y: 0 })
-          gsap.set(rightPanel, { clearProps: 'x,autoAlpha', display: '' })
+          gsap.set(rightPanel, { clearProps: 'x,opacity,visibility', display: '' })
           gsap.set(ticketStage, { autoAlpha: 0 })
           gsap.set(stackItems, { x: 0, y: 0, rotation: 0, scale: 1, autoAlpha: 0 })
 
@@ -508,6 +540,12 @@ function DesktopApp() {
           setVisualTicketIndex(0)
           setIsAnimating(false)
 
+          revealedTextBlocks = new WeakSet()
+          hasStartedScrolling = false
+          gsap.set('.grid-text', { clearProps: 'opacity,visibility' })
+          gsap.killTweensOf('.grid-text-word')
+          gsap.set('.grid-text-word', { autoAlpha: 0, y: 8 })
+
           const cards = gsap.utils.toArray('.grid .card')
           gsap.killTweensOf(cards, 'autoAlpha,scale')
           cards.forEach((card) => {
@@ -515,7 +553,7 @@ function DesktopApp() {
               width: '',
               height: '',
               borderRadius: '',
-              clearProps: 'autoAlpha,scale,transform',
+              clearProps: 'opacity,visibility,transform',
             })
             const paths = card.querySelectorAll('.graphic-path')
             paths.forEach((path) => {
@@ -538,6 +576,7 @@ function DesktopApp() {
             defaults: { ease: 'back.out(1.7)' },
             onComplete() {
               scrollBaseRef.current = window.scrollY
+              revealVisibleTextBlocks()
             },
           })
           introTlRef.current = newIntroTl
@@ -676,6 +715,7 @@ function DesktopApp() {
         e.preventDefault()
         const effectiveDelta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY
         if (s.gridProgress >= READY_PROGRESS && effectiveDelta > 0) return
+        if (effectiveDelta !== 0) hasStartedScrolling = true
         setHorizontalTarget(horizontalState.targetProgress + effectiveDelta * WHEEL_SENSITIVITY)
       }
 
@@ -775,8 +815,13 @@ function DesktopApp() {
     animationMapRef.current.set(card, tl)
   }
 
+  const canAnimateCard = () => {
+    const { isAnimating, phase } = stateRef.current
+    return !isAnimating && (phase === 'grid' || phase === 'ticket')
+  }
+
   const handlePointerDown = (e) => {
-    if (stateRef.current.isAnimating || stateRef.current.phase !== 'grid') return
+    if (!canAnimateCard()) return
 
     const card = e.currentTarget
 
@@ -791,7 +836,7 @@ function DesktopApp() {
   const handlePointerUp = (e) => {
     const card = e.currentTarget
 
-    if (stateRef.current.isAnimating || stateRef.current.phase !== 'grid') {
+    if (!canAnimateCard()) {
       pendingPressMapRef.current.delete(card)
       return
     }
@@ -911,7 +956,7 @@ function DesktopApp() {
                     style={{ gridRow: cell.row, gridColumn: cell.col }}
                     data-cell={cell.key}
                   >
-                    {cfg.type !== 'empty' && cfg.type !== 'placeholder' && (
+                    {cfg.type !== 'empty' && (
                       <Card
                         bgColor={cfg.bgColor}
                         onPointerDown={handlePointerDown}
@@ -921,10 +966,29 @@ function DesktopApp() {
                         <Graphic name={cfg.graphic} />
                       </Card>
                     )}
-                    {cfg.type === 'placeholder' && <Card bgColor="#BBBBBB" />}
                   </div>
                 )
               })}
+              {textBlocks.map((block) => (
+                <div
+                  key={block.key}
+                  className={`grid-text grid-text--${block.align}`}
+                  style={{
+                    gridRow: block.row,
+                    gridColumn: `${block.col} / span ${block.colSpan || 1}`,
+                  }}
+                >
+                  {block.lines.map(line => (
+                    <span key={line} className="grid-text-line">
+                      {line.split(' ').map((word, index, words) => (
+                        <span key={`${word}-${index}`} className="grid-text-word">
+                          {word}{index < words.length - 1 ? '\u00A0' : ''}
+                        </span>
+                      ))}
+                    </span>
+                  ))}
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -956,7 +1020,12 @@ function DesktopApp() {
               ref={setStackRef(i)}
               style={{ zIndex: i + 1 }}
             >
-              <Ticket data={ticket} />
+              <Ticket
+                data={ticket}
+                onCardPointerDown={handlePointerDown}
+                onCardPointerUp={handlePointerUp}
+                onCardPointerLeave={handlePointerLeave}
+              />
             </div>
           ))}
         </div>
