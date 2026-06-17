@@ -246,12 +246,17 @@ function DesktopApp() {
             duration: 0.48,
             ease: 'power3.inOut',
           }, 0.04)
-          .to(selectedCard, {
+          .fromTo(selectedCard, {
+            width: 320,
+            height: 320,
+            borderRadius: 20,
+          }, {
             width: cardTargetSize,
             height: cardTargetSize,
             borderRadius: 24,
             duration: 0.48,
             ease: 'power3.inOut',
+            immediateRender: false,
           }, 0.04)
           .call(() => { rightPanel.style.display = 'flex' }, [], 0.28)
           .set(rightPanel, { autoAlpha: 1, willChange: 'transform' }, 0.28)
@@ -406,8 +411,22 @@ function DesktopApp() {
         animationMapRef.current.delete(selectedCard)
         pressMapRef.current.delete(selectedCard)
         pendingPressMapRef.current.delete(selectedCard)
+        // Only remove the transform tween owned by intro/press interactions.
+        // Killing every tween here also removes the paused width/height tween
+        // already registered in tl1to2, leaving the card with movement only.
         gsap.killTweensOf(selectedCard, 'scale')
-        gsap.set(selectedCard, { scale: 1 })
+
+        // Cold loads can reach this transition while the intro still owns the
+        // card's transform. Clear that transform completely so the size tween
+        // starts from the CSS dimensions instead of a cached GSAP scale.
+        gsap.set(selectedCard, {
+          width: 320,
+          height: 320,
+          borderRadius: 20,
+          clearProps: 'transform',
+        })
+        selectedCard.getBoundingClientRect()
+        tl1to2.invalidate()
 
         const origComplete = tl1to2.eventCallback('onComplete')
         tl1to2.eventCallback('onComplete', () => {
@@ -418,7 +437,7 @@ function DesktopApp() {
           setVisualTicketIndex(0)
           setIsAnimating(false)
         })
-        tl1to2.play(0)
+        requestAnimationFrame(() => tl1to2.play(0))
       }
 
       const reverseGridToTicket = () => {
@@ -978,7 +997,7 @@ function DesktopApp() {
                     gridColumn: `${block.col} / span ${block.colSpan || 1}`,
                   }}
                 >
-                  {block.lines.map(line => (
+                  {block.lines?.map(line => (
                     <span key={line} className="grid-text-line">
                       {line.split(' ').map((word, index, words) => (
                         <span key={`${word}-${index}`} className="grid-text-word">

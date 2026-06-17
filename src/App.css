@@ -63,8 +63,16 @@
 }
 
 .grid-text--left-top,
-.grid-text--left-bottom {
+.grid-text--left-bottom,
+.grid-text--right-top {
   align-items: flex-start;
+}
+
+.grid-text--right-top {
+  align-items: flex-end;
+  justify-content: flex-start;
+  padding: 20px;
+  text-align: right;
 }
 
 .grid-text--left-bottom {
