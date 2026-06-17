@@ -6,6 +6,21 @@ const svgModules = import.meta.glob('/src/assets/*.svg', {
   import: 'default',
 })
 
+const processedSvgCache = new Map()
+
+function getProcessedSvg(rawSvg) {
+  let svg = processedSvgCache.get(rawSvg)
+  if (!svg) {
+    svg = rawSvg
+      .replace(/<svg /, '<svg class="graphic-svg" ')
+      .replace(/ width="[^"]*"/, '')
+      .replace(/ height="[^"]*"/, '')
+      .replace(/<path /g, '<path class="graphic-path" ')
+    processedSvgCache.set(rawSvg, svg)
+  }
+  return svg
+}
+
 function Graphic({ name, size = 300, className }) {
   const key = `/src/assets/${name}.svg`
   const rawSvg = svgModules[key]
@@ -14,11 +29,7 @@ function Graphic({ name, size = 300, className }) {
     return <div className="graphic-placeholder" style={{ width: size, height: size }} />
   }
 
-  const svg = rawSvg
-    .replace(/<svg /, '<svg class="graphic-svg" ')
-    .replace(/ width="[^"]*"/, '')
-    .replace(/ height="[^"]*"/, '')
-    .replace(/<path /g, '<path class="graphic-path" ')
+  const svg = getProcessedSvg(rawSvg)
 
   return (
     <div className={`graphic${className ? ` ${className}` : ''}`} style={{ width: size, height: size }}>

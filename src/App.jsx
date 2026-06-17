@@ -1,4 +1,4 @@
-import { useRef, useLayoutEffect } from 'react'
+import { useRef, useLayoutEffect, useState } from 'react'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { ScrollToPlugin } from 'gsap/ScrollToPlugin'
@@ -13,13 +13,14 @@ import AnimationController from './components/AnimationController/AnimationContr
 import MobileView from './components/MobileView/MobileView'
 import { useAnimationState } from './hooks/useAnimationState'
 import { useIsMobile } from './hooks/useIsMobile'
+import { getPathLength } from './utils/pathCache'
 import './App.css'
 
 gsap.registerPlugin(ScrollTrigger, ScrollToPlugin, Draggable, InertiaPlugin)
 
-const GRID_DAMPING = 0.2
 const WHEEL_SENSITIVITY = 0.00045
 const PROGRESS_EASE = 0.14
+const READY_PROGRESS = 0.995
 
 function App() {
   const isMobile = useIsMobile()
@@ -53,6 +54,8 @@ function DesktopApp() {
     setPhase, setGridProgress, setTicketIndex, setIsAnimating,
     setReady,
   } = useAnimationState()
+
+  const [visualTicketIndex, setVisualTicketIndex] = useState(0)
 
   const stepTimelinesRef = useRef([])
   const introTlRef = useRef(null)
@@ -113,11 +116,12 @@ function DesktopApp() {
 
       shuffled.forEach((card, i) => {
         const t = i * 0.04
+        introTl.set(card, { willChange: 'transform, opacity' }, t)
         introTl.to(card, { autoAlpha: 1, scale: 1, duration: 0.55 }, t)
 
         const paths = card.querySelectorAll('.graphic-path')
         paths.forEach((path) => {
-          const len = path.getTotalLength()
+          const len = getPathLength(path)
           gsap.set(path, {
             autoAlpha: 0,
             strokeDasharray: `${len} ${len * 2}`,
@@ -126,6 +130,8 @@ function DesktopApp() {
           introTl.set(path, { autoAlpha: 1, overwrite: false }, t + 0.38)
           introTl.to(path, { strokeDashoffset: 0, duration: 0.4, ease: 'power2.inOut' }, t + 0.35)
         })
+
+        introTl.set(card, { willChange: 'auto', clearProps: 'willChange' }, t + 0.8)
       })
 
       /* ===== Target cell & layout values ===== */
@@ -151,7 +157,8 @@ function DesktopApp() {
         currentProgress: 0,
         progress: 0,
       }
-      let horizontalTween = null
+      let lastReportedGridProgress = -1
+      const GRID_PROGRESS_THRESHOLD = 0.005
 
       const setHorizontalBase = (progress) => {
         horizontalState.targetProgress = progress
@@ -160,20 +167,12 @@ function DesktopApp() {
       }
 
       const stopHorizontalDamping = () => {
-        horizontalTween?.kill()
-        horizontalTween = null
+        lastReportedGridProgress = -1
       }
 
       const renderHorizontalGrid = (nextProgress) => {
         horizontalState.progress = nextProgress
-        gsap.set(grid, { y: 0 })
-        horizontalTween = gsap.to(grid, {
-          x: stepGridTargetX * nextProgress,
-          duration: GRID_DAMPING,
-          ease: 'power3.out',
-          overwrite: 'auto',
-        })
-
+        gsap.set(grid, { y: 0, x: stepGridTargetX * nextProgress })
         return nextProgress
       }
 
@@ -198,6 +197,7 @@ function DesktopApp() {
         const panelTargetTop = leftTargetRect.top
 
         tl1to2
+          .set([gridPanel, selectedCard], { willChange: 'transform, width, height, border-radius, opacity' }, 0)
           .to(`[data-cell]:not([data-cell="${selectedCardKey}"])`, { autoAlpha: 0, duration: 0.12 }, 0)
           .to(gridPanel, {
             left: panelTargetLeft,
@@ -222,10 +222,12 @@ function DesktopApp() {
             ease: 'power3.inOut',
           }, 0.04)
           .call(() => { rightPanel.style.display = 'flex' }, [], 0.28)
+          .set(rightPanel, { willChange: 'transform' }, 0.28)
           .fromTo(rightPanel, { x: vw }, { x: 0, duration: 0.28, ease: 'power3.out' }, 0.28)
           .fromTo(ticketStage, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.02 }, 0.58)
           .fromTo(firstTicket, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.02 }, 0.58)
           .to([gridPanel, rightPanel], { autoAlpha: 0, duration: 0.08 }, 0.62)
+          .set([gridPanel, rightPanel, selectedCard], { willChange: 'auto', clearProps: 'willChange' }, 0.7)
       }
 
       tl1to2.eventCallback('onReverseComplete', () => {
@@ -248,6 +250,7 @@ function DesktopApp() {
 
         const ticketTl = gsap.timeline({ paused: true })
         ticketTl
+          .set([ticket, prev], { willChange: 'transform, opacity' }, 0)
           .fromTo(ticket,
             { autoAlpha: 0, y: vh * 0.18 },
             { autoAlpha: 1, y: 0, duration: 0.24, ease: 'power3.out', immediateRender: false },
@@ -261,6 +264,7 @@ function DesktopApp() {
             duration: 0.16,
             ease: 'power2.out',
           }, 0.02)
+          .set([ticket, prev], { willChange: 'auto', clearProps: 'willChange' }, 0.18)
 
         ticketStepTls.push(ticketTl)
       })
@@ -359,7 +363,7 @@ function DesktopApp() {
       /* ===== Animation API functions ===== */
       const playGridToTicket = () => {
         if (stateRef.current.isAnimating) return
-        if (stateRef.current.phase !== 'grid' || stateRef.current.gridProgress < 1) return
+        if (stateRef.current.phase !== 'grid' || stateRef.current.gridProgress < READY_PROGRESS) return
 
         setIsAnimating(true)
         stopHorizontalDamping()
@@ -370,6 +374,7 @@ function DesktopApp() {
           if (origComplete) origComplete()
           setPhase('ticket')
           setTicketIndex(0)
+          setVisualTicketIndex(0)
           setIsAnimating(false)
         })
         tl1to2.play(0)
@@ -402,25 +407,30 @@ function DesktopApp() {
         const step = (current) => {
           if (current === targetIndex) {
             setTicketIndex(targetIndex)
+            setVisualTicketIndex(targetIndex)
             setIsAnimating(false)
             return
           }
 
           if (current < targetIndex) {
+            setVisualTicketIndex(current + 1)
             const tl = ticketStepTls[current]
             const orig = tl.eventCallback('onComplete')
             tl.eventCallback('onComplete', () => {
               tl.eventCallback('onComplete', orig)
               if (orig) orig()
+              setTicketIndex(current + 1)
               step(current + 1)
             })
             tl.play(0)
           } else {
+            setVisualTicketIndex(current - 1)
             const tl = ticketStepTls[current - 1]
             const orig = tl.eventCallback('onReverseComplete')
             tl.eventCallback('onReverseComplete', () => {
               tl.eventCallback('onReverseComplete', orig)
               if (orig) orig()
+              setTicketIndex(current - 1)
               step(current - 1)
             })
             tl.reverse(tl.duration())
@@ -486,6 +496,7 @@ function DesktopApp() {
           setPhase('grid')
           setGridProgress(0)
           setTicketIndex(0)
+          setVisualTicketIndex(0)
           setIsAnimating(false)
 
           const cards = gsap.utils.toArray('.grid .card')
@@ -500,7 +511,7 @@ function DesktopApp() {
             const paths = card.querySelectorAll('.graphic-path')
             paths.forEach((path) => {
               gsap.killTweensOf(path)
-              const len = path.getTotalLength()
+              const len = getPathLength(path)
               gsap.set(path, {
                 autoAlpha: 0,
                 strokeDasharray: `${len} ${len * 2}`,
@@ -524,12 +535,14 @@ function DesktopApp() {
 
           shuffled.forEach((card, i) => {
             const t = i * 0.04
+            newIntroTl.set(card, { willChange: 'transform, opacity' }, t)
             newIntroTl.to(card, { autoAlpha: 1, scale: 1, duration: 0.55 }, t)
             const paths = card.querySelectorAll('.graphic-path')
             paths.forEach((path) => {
               newIntroTl.set(path, { autoAlpha: 1, overwrite: false }, t + 0.38)
               newIntroTl.to(path, { strokeDashoffset: 0, duration: 0.4, ease: 'power2.inOut' }, t + 0.35)
             })
+            newIntroTl.set(card, { willChange: 'auto', clearProps: 'willChange' }, t + 0.8)
           })
         }
 
@@ -607,19 +620,27 @@ function DesktopApp() {
           if (horizontalState.currentProgress !== horizontalState.targetProgress) {
             horizontalState.currentProgress = horizontalState.targetProgress
             const progress = renderHorizontalGrid(horizontalState.currentProgress)
-            setGridProgress(progress)
+            if (Math.abs(progress - lastReportedGridProgress) >= GRID_PROGRESS_THRESHOLD) {
+              lastReportedGridProgress = progress
+              setGridProgress(progress)
+            }
           }
           return
         }
 
         horizontalState.currentProgress += diff * PROGRESS_EASE
         const progress = renderHorizontalGrid(horizontalState.currentProgress)
-        setGridProgress(progress)
+
+        if (Math.abs(progress - lastReportedGridProgress) >= GRID_PROGRESS_THRESHOLD) {
+          lastReportedGridProgress = progress
+          setGridProgress(progress)
+        }
 
         if (horizontalState.targetProgress >= 1 && progress > 0.995) {
           setIsAnimating(true)
           setHorizontalBase(1)
           renderHorizontalGrid(1)
+          lastReportedGridProgress = 1
           setGridProgress(1)
           setReady()
           scrollBaseRef.current = window.scrollY
@@ -645,7 +666,7 @@ function DesktopApp() {
 
         e.preventDefault()
         const effectiveDelta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY
-        if (s.gridProgress >= 1 && effectiveDelta > 0) return
+        if (s.gridProgress >= READY_PROGRESS && effectiveDelta > 0) return
         setHorizontalTarget(horizontalState.targetProgress + effectiveDelta * WHEEL_SENSITIVITY)
       }
 
@@ -667,18 +688,25 @@ function DesktopApp() {
   const pressMapRef = useRef(new WeakMap())
   const animationMapRef = useRef(new WeakMap())
   const pendingPressMapRef = useRef(new WeakMap())
+  const pathDataCacheRef = useRef(new WeakMap())
   const eraseDuration = 0.6
   const quickPressThreshold = 280
   const drawRevealDelay = 0.045
   const eraseHideLead = 0.025
 
-  const getGraphicPaths = (card) => (
-    Array.from(card.querySelectorAll('.graphic-path')).map((path) => {
-      const len = path.getTotalLength()
+  const getGraphicPaths = (card) => {
+    const cached = pathDataCacheRef.current.get(card)
+    if (cached) return cached
+
+    const pathData = Array.from(card.querySelectorAll('.graphic-path')).map((path) => {
+      const len = getPathLength(path)
       const dash = `${len} ${len * 2}`
       return { path, len, dash }
     })
-  )
+
+    pathDataCacheRef.current.set(card, pathData)
+    return pathData
+  }
 
   const setGraphicVisible = (pathData) => {
     pathData.forEach(({ path, dash }) => {
@@ -729,6 +757,7 @@ function DesktopApp() {
     setGraphicVisible(pathData)
 
     const tl = gsap.timeline({ defaults: { overwrite: 'auto' } })
+    tl.set(card, { willChange: 'transform' }, 0)
     tl.to(card, { scale: 1.18, duration: eraseDuration, ease: 'power2.out' }, 0)
     addGraphicErase(tl, pathData, 0, eraseDuration)
     tl.set(pathData.map(({ path }) => path), { autoAlpha: 0, overwrite: false }, eraseDuration - eraseHideLead)
@@ -774,6 +803,8 @@ function DesktopApp() {
     const tl = gsap.timeline({
       defaults: { overwrite: 'auto' },
       onComplete: () => {
+        gsap.set(card, { willChange: 'auto', clearProps: 'willChange' })
+
         if (animationMapRef.current.get(card) === tl) {
           animationMapRef.current.delete(card)
         }
@@ -785,6 +816,8 @@ function DesktopApp() {
       },
     })
     animationMapRef.current.set(card, tl)
+
+    tl.set(card, { willChange: 'transform' }, 0)
 
     if (releaseEraseDuration > 0.02) {
       tl.to(card, { scale: 1.18, duration: releaseEraseDuration, ease: 'power2.out' }, 0)
@@ -808,7 +841,7 @@ function DesktopApp() {
     const s = stateRef.current
     if (s.isAnimating) return
 
-    if (s.phase === 'grid' && s.gridProgress >= 1) {
+    if (s.phase === 'grid' && s.gridProgress >= READY_PROGRESS) {
       apiRef.current.playGridToTicket?.()
     } else if (s.phase === 'ticket') {
       if (s.ticketIndex < 4) {
@@ -929,6 +962,7 @@ function DesktopApp() {
           phase={phase}
           gridProgress={gridProgress}
           ticketIndex={ticketIndex}
+          visualTicketIndex={visualTicketIndex}
           isAnimating={isAnimating}
           onAdvance={handleAdvance}
           onBack={handleBack}

@@ -19,7 +19,6 @@
   overflow: hidden;
   border-radius: 0;
   background: #EFEFE7;
-  will-change: transform, width, height, border-radius, opacity;
 }
 
 .grid-wrapper {
@@ -60,7 +59,6 @@
   border-radius: 32px;
   background: #EFEFE7;
   box-sizing: border-box;
-  will-change: transform;
 }
 
 .ticket-head {
@@ -127,7 +125,6 @@
   position: absolute;
   top: var(--ticket-y);
   left: var(--ticket-x);
-  will-change: transform, opacity;
 }
 
 /* ===== Scatter Area ===== */

@@ -4,6 +4,7 @@ import { Draggable } from 'gsap/Draggable'
 import { InertiaPlugin } from 'gsap/InertiaPlugin'
 import Graphic from '../Graphic/Graphic'
 import tickets from '../../data/tickets.json'
+import { getPathLength } from '../../utils/pathCache'
 import './MobileView.css'
 
 gsap.registerPlugin(Draggable, InertiaPlugin)
@@ -13,7 +14,7 @@ const GRAPHIC_SIZE = 100
 const MESSAGE = 'Please open on desktop'
 const SUB_MESSAGE = 'or you can drag these stickers'
 const LOGO_SIZE = 30
-const LOGO_INITIAL_SCALE = 80 / LOGO_SIZE
+const LOGO_INITIAL_SIZE = 80
 
 function calculatePositions(count, vw, vh, size) {
   const margin = 24
@@ -61,9 +62,9 @@ function MobileView() {
       const vw = view.clientWidth
       const vh = view.clientHeight
 
-      const initialScale = LOGO_INITIAL_SCALE
-      const centerX = (vw - LOGO_SIZE) / 2
-      const centerY = (vh - LOGO_SIZE) / 2
+      const centerX = (vw - LOGO_INITIAL_SIZE) / 2
+      const centerY = (vh - LOGO_INITIAL_SIZE) / 2
+      const logoFinalX = (vw - LOGO_SIZE) / 2
       const logoBottomY = vh - 48 - LOGO_SIZE
 
       const logoEl = logoRef.current
@@ -74,7 +75,7 @@ function MobileView() {
       const tickPath = logoPaths[1]
 
       logoPaths.forEach((path) => {
-        const len = path.getTotalLength()
+        const len = getPathLength(path)
         if (!len) return
         gsap.set(path, {
           autoAlpha: 0,
@@ -87,7 +88,8 @@ function MobileView() {
         position: 'absolute',
         left: centerX,
         top: centerY,
-        scale: initialScale,
+        width: LOGO_INITIAL_SIZE,
+        height: LOGO_INITIAL_SIZE,
       })
 
       const chars = messageRef.current?.querySelectorAll('.mobile-char')
@@ -133,8 +135,10 @@ function MobileView() {
       }
 
       tl.to(logoEl, {
+        left: logoFinalX,
         top: logoBottomY,
-        scale: 1,
+        width: LOGO_SIZE,
+        height: LOGO_SIZE,
         duration: 0.55,
         ease: 'power3.inOut',
       }, strokeEnd + 0.3)
@@ -221,7 +225,7 @@ function MobileView() {
   return (
     <div className="mobile-view" ref={viewRef}>
       <div className="mobile-logo" ref={logoRef}>
-        <Graphic name="logo" size={LOGO_SIZE} />
+        <Graphic name="logo" size={LOGO_INITIAL_SIZE} />
       </div>
       <p className="mobile-message" ref={messageRef}>
         {renderMessage(MESSAGE)}

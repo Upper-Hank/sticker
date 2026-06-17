@@ -13,8 +13,12 @@
 .mobile-logo {
   position: absolute;
   z-index: 2;
-  will-change: transform, top;
-  transform-origin: center center;
+  will-change: left, top, width, height;
+}
+
+.mobile-logo .graphic {
+  width: 100% !important;
+  height: 100% !important;
 }
 
 .mobile-graphics {

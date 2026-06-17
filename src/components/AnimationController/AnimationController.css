@@ -4,81 +4,119 @@
   left: 50%;
   transform: translateX(-50%);
   z-index: 1000;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  width: 240px;
+  height: 48px;
 }
 
-.ac-bar,
-.ac-circle,
-.ac-ticket {
+/* ---- shell: centered within fixed container ---- */
+.ac-shell {
   position: absolute;
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
-  visibility: hidden;
-}
-
-/* Progress bar */
-.ac-bar-track {
+  overflow: hidden;
+  box-sizing: border-box;
   width: 240px;
   height: 4px;
   border-radius: 2px;
+}
+
+/* ---- bg: visual skin (inherits shell radius) ---- */
+.ac-bg {
+  position: absolute;
+  inset: 0;
+  border-style: solid;
+  border-width: 0;
+  border-color: transparent;
+  border-radius: inherit;
   background: rgba(83, 83, 83, 0.15);
-  overflow: hidden;
+  box-shadow: none;
+  transition: opacity 0.18s ease, filter 0.18s ease;
 }
 
-.ac-bar-fill {
+.ac--disabled .ac-bg {
+  opacity: 0.72;
+  filter: saturate(0.75);
+}
+
+.ac--disabled .ac-content {
+  opacity: 0.4;
+}
+
+/* ---- content layer ---- */
+.ac-content {
+  position: absolute;
+  inset: 0;
+  transition: opacity 0.18s ease;
+}
+
+/* ---- progress fill ---- */
+.ac-progress {
+  position: absolute;
+  inset: 0;
+}
+
+.ac-progress-fill {
   height: 100%;
-  border-radius: 2px;
   background: #535353;
-  transition: width 0.12s linear;
+  border-radius: 2px;
+  transform-origin: left center;
+  transition: transform 0.1s linear;
 }
 
-/* Circle button */
-.ac-circle-btn {
+/* ---- icon wrapper (arrow / restart) ---- */
+.ac-icon-wrap {
+  position: absolute;
+  inset: 0;
   display: flex;
   justify-content: center;
   align-items: center;
-  width: 44px;
-  height: 44px;
-  border: 2px solid rgba(83, 83, 83, 0.3);
-  border-radius: 50%;
-  background: rgba(239, 239, 231, 0.9);
-  color: #535353;
-  cursor: pointer;
-  transition: border-color 0.2s, background 0.2s, transform 0.15s;
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
+  visibility: hidden;
 }
 
-.ac-circle-btn:hover:not(:disabled) {
-  border-color: #535353;
-  background: #EFEFE7;
+.ac-icon-btn {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: transparent;
+  color: #535353;
+  cursor: pointer;
+  transition: transform 0.15s, opacity 0.15s;
+}
+
+.ac-icon-svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+
+.ac-icon-btn:hover:not(:disabled) {
   transform: scale(1.08);
 }
 
-.ac-circle-btn:active:not(:disabled) {
+.ac-icon-btn:active:not(:disabled) {
   transform: scale(0.95);
 }
 
-.ac-circle-btn:disabled {
-  opacity: 0.4;
+.ac-icon-btn:disabled {
   cursor: not-allowed;
 }
 
-/* Ticket controls */
-.ac-ticket {
+/* ---- ticket UI ---- */
+.ac-ticket-ui {
+  position: absolute;
+  inset: 0;
   display: flex;
   align-items: center;
-  gap: 20px;
-  padding: 8px 20px;
-  border-radius: 28px;
-  background: rgba(239, 239, 231, 0.9);
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
+  gap: 8px;
+  padding: 0 8px;
+  visibility: hidden;
 }
 
+/* nav buttons */
 .ac-nav-btn {
   display: flex;
   justify-content: center;
@@ -91,6 +129,13 @@
   color: #535353;
   cursor: pointer;
   transition: background 0.15s, transform 0.12s;
+  flex-shrink: 0;
+}
+
+.ac-nav-svg {
+  width: 18px;
+  height: 18px;
+  display: block;
 }
 
 .ac-nav-btn:hover:not(:disabled) {
@@ -103,45 +148,44 @@
 }
 
 .ac-nav-btn:disabled {
-  opacity: 0.25;
   cursor: not-allowed;
 }
 
+/* ---- dots ---- */
 .ac-dots {
   display: flex;
   align-items: center;
-  gap: 10px;
+  justify-content: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
 }
 
 .ac-dot {
-  width: 8px;
-  height: 8px;
+  width: 14px;
+  height: 22px;
   border: none;
-  border-radius: 50%;
-  background: rgba(83, 83, 83, 0.25);
+  background: transparent;
   cursor: pointer;
   padding: 0;
-  transition: background 0.2s, transform 0.15s;
-}
-
-.ac-dot:hover:not(:disabled) {
-  background: rgba(83, 83, 83, 0.5);
-  transform: scale(1.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
 .ac-dot:disabled {
   cursor: default;
 }
 
-.ac-dot--active {
-  background: #535353;
-  transform: scale(1.2);
+.ac-dot-core {
+  display: block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(83, 83, 83, 0.25);
 }
 
-.ac-dot--active:hover:not(:disabled) {
-  background: #535353;
-}
-
-.ac-restart {
-  border-color: rgba(83, 83, 83, 0.2);
+.ac-dot:hover:not(:disabled) .ac-dot-core {
+  background: rgba(83, 83, 83, 0.5);
 }
