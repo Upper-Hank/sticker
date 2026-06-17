@@ -275,7 +275,6 @@ function DesktopApp() {
       tl3to4
         .to([gridPanel, rightPanel], { autoAlpha: 0, duration: 0.15 }, 0)
         .to(ticketStage, { autoAlpha: 0, duration: 0.18 }, 0)
-        .to('.ticket-stack-item', { autoAlpha: 0, duration: 0.18 }, 0)
 
       const graphics = scatterGraphicsRef.current
         .filter(Boolean)
