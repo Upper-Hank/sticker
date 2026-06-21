@@ -3,7 +3,7 @@ import Graphic from '../Graphic/Graphic'
 import Logo from '../Graphic/Graphic'
 import './Ticket.css'
 
-function Ticket({ data, onCardPointerDown, onCardPointerUp, onCardPointerLeave }) {
+function Ticket({ data }) {
   const { bgColor, title, letter, intro, graphic, logo } = data
 
   return (
@@ -12,9 +12,6 @@ function Ticket({ data, onCardPointerDown, onCardPointerUp, onCardPointerLeave }
         <Card
           bgColor={bgColor}
           size={480}
-          onPointerDown={onCardPointerDown}
-          onPointerUp={onCardPointerUp}
-          onPointerLeave={onCardPointerLeave}
         >
           <Graphic name={graphic} />
         </Card>

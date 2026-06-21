@@ -19,7 +19,9 @@ import './App.css'
 gsap.registerPlugin(ScrollTrigger, ScrollToPlugin, Draggable, InertiaPlugin)
 
 const WHEEL_SENSITIVITY = 0.00045
-const PROGRESS_EASE = 0.14
+// Keep the grid noticeably trailing the wheel/touchpad target. A larger value
+// converges so quickly on high-resolution trackpads that the damping disappears.
+const PROGRESS_EASE = 0.08
 const READY_PROGRESS = 0.995
 
 function App() {
@@ -125,11 +127,20 @@ function DesktopApp() {
           const len = getPathLength(path)
           gsap.set(path, {
             autoAlpha: 0,
-            strokeDasharray: `${len} ${len * 2}`,
+            strokeDasharray: `${len} ${len}`,
             strokeDashoffset: len,
           })
-          introTl.set(path, { autoAlpha: 1, overwrite: false }, t + 0.38)
-          introTl.to(path, { strokeDashoffset: 0, duration: 0.4, ease: 'power2.inOut' }, t + 0.35)
+          introTl.fromTo(path, {
+            strokeDashoffset: len,
+          }, {
+            strokeDashoffset: 0,
+            duration: 0.55,
+            ease: 'power2.inOut',
+            immediateRender: false,
+          }, t + 0.18)
+          // Round line caps leave a visible endpoint at dashoffset === length.
+          // Reveal only after the dash has advanced past that endpoint.
+          introTl.set(path, { autoAlpha: 1, overwrite: false }, t + 0.22)
         })
 
         introTl.set(card, { willChange: 'auto', clearProps: 'willChange' }, t + 0.8)
@@ -404,14 +415,10 @@ function DesktopApp() {
         setIsAnimating(true)
         stopHorizontalDamping()
 
-        // The intro and pointer interactions also animate the card's scale.
-        // Normalize that shared transform state before the transition owns it.
+        // The intro also animates the card's scale. Normalize that shared
+        // transform state before the transition owns it.
         introTlRef.current?.killTweensOf(selectedCard)
-        animationMapRef.current.get(selectedCard)?.kill()
-        animationMapRef.current.delete(selectedCard)
-        pressMapRef.current.delete(selectedCard)
-        pendingPressMapRef.current.delete(selectedCard)
-        // Only remove the transform tween owned by intro/press interactions.
+        // Only remove the transform tween owned by the intro interaction.
         // Killing every tween here also removes the paused width/height tween
         // already registered in tl1to2, leaving the card with movement only.
         gsap.killTweensOf(selectedCard, 'scale')
@@ -580,7 +587,7 @@ function DesktopApp() {
               const len = getPathLength(path)
               gsap.set(path, {
                 autoAlpha: 0,
-                strokeDasharray: `${len} ${len * 2}`,
+                strokeDasharray: `${len} ${len}`,
                 strokeDashoffset: len,
               })
             })
@@ -606,8 +613,16 @@ function DesktopApp() {
             newIntroTl.to(card, { autoAlpha: 1, scale: 1, duration: 0.55 }, t)
             const paths = card.querySelectorAll('.graphic-path')
             paths.forEach((path) => {
-              newIntroTl.set(path, { autoAlpha: 1, overwrite: false }, t + 0.38)
-              newIntroTl.to(path, { strokeDashoffset: 0, duration: 0.4, ease: 'power2.inOut' }, t + 0.35)
+              const len = getPathLength(path)
+              newIntroTl.fromTo(path, {
+                strokeDashoffset: len,
+              }, {
+                strokeDashoffset: 0,
+                duration: 0.55,
+                ease: 'power2.inOut',
+                immediateRender: false,
+              }, t + 0.18)
+              newIntroTl.set(path, { autoAlpha: 1, overwrite: false }, t + 0.22)
             })
             newIntroTl.set(card, { willChange: 'auto', clearProps: 'willChange' }, t + 0.8)
           })
@@ -753,168 +768,6 @@ function DesktopApp() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const pressMapRef = useRef(new WeakMap())
-  const animationMapRef = useRef(new WeakMap())
-  const pendingPressMapRef = useRef(new WeakMap())
-  const pathDataCacheRef = useRef(new WeakMap())
-  const eraseDuration = 0.6
-  const quickPressThreshold = 280
-  const drawRevealDelay = 0.045
-  const eraseHideLead = 0.025
-
-  const getGraphicPaths = (card) => {
-    const cached = pathDataCacheRef.current.get(card)
-    if (cached) return cached
-
-    const pathData = Array.from(card.querySelectorAll('.graphic-path')).map((path) => {
-      const len = getPathLength(path)
-      const dash = `${len} ${len * 2}`
-      return { path, len, dash }
-    })
-
-    pathDataCacheRef.current.set(card, pathData)
-    return pathData
-  }
-
-  const setGraphicVisible = (pathData) => {
-    pathData.forEach(({ path, dash }) => {
-      gsap.set(path, {
-        autoAlpha: 1,
-        strokeDasharray: dash,
-        strokeDashoffset: 0,
-      })
-    })
-  }
-
-  const setGraphicHiddenForDraw = (pathData) => {
-    pathData.forEach(({ path, len, dash }) => {
-      gsap.set(path, {
-        autoAlpha: 0,
-        strokeDasharray: dash,
-        strokeDashoffset: len,
-      })
-    })
-  }
-
-  const addGraphicErase = (tl, pathData, at = 0, duration = 0.6) => {
-    pathData.forEach(({ path, len }) => {
-      tl.to(path, {
-        strokeDashoffset: -len,
-        duration,
-        ease: 'power2.inOut',
-      }, at)
-    })
-  }
-
-  const addGraphicDraw = (tl, pathData, at = 0, duration = 0.4) => {
-    tl.set(pathData.map(({ path }) => path), { autoAlpha: 1, overwrite: false }, at + drawRevealDelay)
-    pathData.forEach(({ path }) => {
-      tl.to(path, {
-        strokeDashoffset: 0,
-        duration,
-        ease: 'power2.inOut',
-      }, at)
-    })
-  }
-
-  const startPressAnimation = (card) => {
-    gsap.killTweensOf(card)
-
-    const pathData = getGraphicPaths(card)
-    pathData.forEach(({ path }) => gsap.killTweensOf(path))
-    setGraphicVisible(pathData)
-
-    const tl = gsap.timeline({ defaults: { overwrite: 'auto' } })
-    tl.set(card, { willChange: 'transform' }, 0)
-    tl.to(card, { scale: 1.18, duration: eraseDuration, ease: 'power2.out' }, 0)
-    addGraphicErase(tl, pathData, 0, eraseDuration)
-    tl.set(pathData.map(({ path }) => path), { autoAlpha: 0, overwrite: false }, eraseDuration - eraseHideLead)
-
-    pressMapRef.current.set(card, { tl, pathData, startTime: Date.now() })
-    animationMapRef.current.set(card, tl)
-  }
-
-  const canAnimateCard = () => {
-    const { isAnimating, phase } = stateRef.current
-    return !isAnimating && (phase === 'grid' || phase === 'ticket')
-  }
-
-  const handlePointerDown = (e) => {
-    if (!canAnimateCard()) return
-
-    const card = e.currentTarget
-
-    if (animationMapRef.current.has(card)) {
-      pendingPressMapRef.current.set(card, { pointerId: e.pointerId })
-      return
-    }
-
-    startPressAnimation(card)
-  }
-
-  const handlePointerUp = (e) => {
-    const card = e.currentTarget
-
-    if (!canAnimateCard()) {
-      pendingPressMapRef.current.delete(card)
-      return
-    }
-
-    const pendingPress = pendingPressMapRef.current.get(card)
-
-    if (pendingPress?.pointerId === e.pointerId) {
-      pendingPressMapRef.current.delete(card)
-      return
-    }
-
-    const state = pressMapRef.current.get(card)
-    if (!state) return
-    pressMapRef.current.delete(card)
-
-    state.tl.kill()
-    const elapsed = Date.now() - state.startTime
-    const remainingErase = Math.max(0, eraseDuration - elapsed / 1000)
-    const isQuickPress = elapsed < quickPressThreshold
-    const releaseEraseDuration = isQuickPress
-      ? Math.min(0.24, remainingErase * 0.52)
-      : remainingErase
-    const drawStart = releaseEraseDuration + 0.025
-    const paths = state.pathData.map(({ path }) => path)
-
-    const tl = gsap.timeline({
-      defaults: { overwrite: 'auto' },
-      onComplete: () => {
-        gsap.set(card, { willChange: 'auto', clearProps: 'willChange' })
-
-        if (animationMapRef.current.get(card) === tl) {
-          animationMapRef.current.delete(card)
-        }
-
-        if (pendingPressMapRef.current.has(card)) {
-          pendingPressMapRef.current.delete(card)
-          startPressAnimation(card)
-        }
-      },
-    })
-    animationMapRef.current.set(card, tl)
-
-    tl.set(card, { willChange: 'transform' }, 0)
-
-    if (releaseEraseDuration > 0.02) {
-      tl.to(card, { scale: 1.18, duration: releaseEraseDuration, ease: 'power2.out' }, 0)
-      addGraphicErase(tl, state.pathData, 0, releaseEraseDuration)
-    }
-
-    tl.set(paths, { autoAlpha: 0, overwrite: false }, Math.max(0, releaseEraseDuration - eraseHideLead))
-    tl.add(() => setGraphicHiddenForDraw(state.pathData), drawStart)
-    addGraphicDraw(tl, state.pathData, drawStart, 0.4)
-    tl.to(card, { scale: 1, duration: 0.46, ease: 'back.out(2.1)' }, drawStart)
-  }
-
-  const handlePointerLeave = (e) => {
-    handlePointerUp(e)
-  }
-
   const setStackRef = (i) => (el) => { stackRefs.current[i] = el }
   const setScatterRef = (i) => (el) => { scatterGraphicsRef.current[i] = el }
 
@@ -976,12 +829,7 @@ function DesktopApp() {
                     data-cell={cell.key}
                   >
                     {cfg.type !== 'empty' && (
-                      <Card
-                        bgColor={cfg.bgColor}
-                        onPointerDown={handlePointerDown}
-                        onPointerUp={handlePointerUp}
-                        onPointerLeave={handlePointerLeave}
-                      >
+                      <Card bgColor={cfg.bgColor}>
                         <Graphic name={cfg.graphic} />
                       </Card>
                     )}
@@ -1039,12 +887,7 @@ function DesktopApp() {
               ref={setStackRef(i)}
               style={{ zIndex: i + 1 }}
             >
-              <Ticket
-                data={ticket}
-                onCardPointerDown={handlePointerDown}
-                onCardPointerUp={handlePointerUp}
-                onCardPointerLeave={handlePointerLeave}
-              />
+              <Ticket data={ticket} />
             </div>
           ))}
         </div>

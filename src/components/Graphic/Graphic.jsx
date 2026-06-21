@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import './Graphic.css'
 
 const svgModules = import.meta.glob('/src/assets/*.svg', {
@@ -38,4 +39,6 @@ function Graphic({ name, size = 300, className }) {
   )
 }
 
-export default Graphic
+// Keep the injected SVG DOM stable across parent state updates. Replacing the
+// innerHTML would detach the path nodes currently owned by GSAP timelines.
+export default memo(Graphic)
