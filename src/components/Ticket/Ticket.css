@@ -1,4 +1,13 @@
 .ticket {
+  position: relative;
+  width: 1280px;
+  height: 520px;
+}
+
+.ticket-front {
+  position: absolute;
+  inset: 0;
+  border-radius: 32px;
   display: flex;
 }
 
@@ -16,6 +25,7 @@
 }
 
 .ticket-right {
+  position: relative;
   display: flex;
   width: 760px;
   padding: 30px 34px 30px 40px;
@@ -29,10 +39,29 @@
 }
 
 .ticket-head {
+  position: static;
   display: flex;
   justify-content: space-between;
   align-items: center;
   width: 100%;
+}
+
+.ticket-head > :not(.ticket-head-backdrop) {
+  position: relative;
+  z-index: 1;
+}
+
+.ticket-head-backdrop {
+  position: absolute;
+  z-index: 0;
+  top: -36px;
+  left: 50%;
+  width: 100vw;
+  height: 132px;
+  background: linear-gradient(to bottom, #EFEFE7 0%, #EFEFE7 52%, rgba(239, 239, 231, 0) 100%);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-50%);
 }
 
 .ticket-title {
@@ -78,5 +107,169 @@
 }
 
 .ticket-logo {
+  position: absolute;
+  right: 34px;
+  bottom: 30px;
   flex-shrink: 0;
+}
+
+.ticket-head > .ticket-logo {
+  position: absolute;
+}
+
+.ticket-read {
+  padding: 0 0 4px;
+  border: 0;
+  border-bottom: 1px solid rgba(49, 49, 49, 0.35);
+  background: transparent;
+  color: #313131;
+  cursor: pointer;
+  font: 14px "IBM Plex Sans", sans-serif;
+}
+
+.ticket-read { margin-top: 12px; }
+
+.ticket-article {
+  display: none;
+}
+
+.ticket-right--prelude {
+  display: block;
+  padding: 30px 48px;
+  overflow: hidden;
+}
+
+.ticket-right--prelude .ticket-head {
+  position: relative;
+  display: grid;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  grid-template-columns: 1fr auto 1fr;
+}
+
+.ticket-right--prelude .ticket-title {
+  justify-self: start;
+}
+
+.ticket-right--prelude .ticket-letter {
+  justify-self: end;
+}
+
+.ticket-right--prelude .ticket-logo {
+  position: static;
+  justify-self: center;
+}
+
+.ticket-right--prelude .ticket-content {
+  position: absolute;
+  bottom: 30px;
+  left: 48px;
+}
+
+.ticket-right--article {
+  --article-overscan: 48px;
+  display: block;
+  padding:
+    calc(36px + var(--article-overscan))
+    calc(max(40px, (100vw - 1200px) / 2) + var(--article-overscan))
+    calc(150px + var(--article-overscan));
+  overflow-x: hidden;
+  overflow-y: auto;
+  background: #EFEFE7;
+  overscroll-behavior: contain;
+}
+
+.ticket-right--article .ticket-head {
+  position: sticky;
+  z-index: 5;
+  top: 0;
+  display: grid;
+  max-width: 1200px;
+  margin: 0 auto;
+  align-items: center;
+  grid-template-columns: 1fr auto 1fr;
+}
+
+.ticket-right--article .ticket-title,
+.ticket-right--article .ticket-letter {
+  justify-self: start;
+  font-size: 28px;
+  line-height: 32px;
+}
+
+.ticket-right--article .ticket-letter {
+  justify-self: end;
+}
+
+.ticket-right--article .ticket-logo {
+  position: static;
+  justify-self: center;
+}
+
+.ticket-right--article .ticket-content {
+  max-width: 860px;
+  margin: 72px auto 0;
+  align-items: flex-start;
+}
+
+.ticket-right--article .ticket-article {
+  display: block;
+  max-width: 1200px;
+  margin: 100px auto 0;
+}
+
+.ticket-article-hero {
+  display: grid;
+  align-items: start;
+  gap: 34px;
+  grid-template-columns: 190px 1fr;
+}
+
+.ticket-article-hero > span {
+  padding-top: 12px;
+  font: 13px "IBM Plex Sans", sans-serif;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.ticket-article-hero h1 {
+  max-width: 880px;
+  margin: 0;
+  font: 400 clamp(64px, 7vw, 108px)/0.95 "IBM Plex Serif", serif;
+  letter-spacing: -0.04em;
+}
+
+.ticket-article-hero p {
+  max-width: 680px;
+  margin: 18px 0 0 190px;
+  grid-column: 1 / -1;
+  font: 24px/1.4 "IBM Plex Sans", sans-serif;
+}
+
+.ticket-article-sections {
+  max-width: 860px;
+  margin: 140px auto 0;
+}
+
+.ticket-article-sections section {
+  display: grid;
+  margin-bottom: 100px;
+  gap: 36px;
+  grid-template-columns: 240px 1fr;
+}
+
+.ticket-article-sections h2 {
+  margin: 0;
+  font: 400 30px/1.15 "IBM Plex Serif", serif;
+}
+
+.ticket-article-sections p {
+  margin: 0;
+  font: 20px/1.65 "IBM Plex Sans", sans-serif;
+}
+
+.ticket-article-sections blockquote {
+  margin: 150px 0 20px;
+  font: 400 clamp(42px, 5vw, 68px)/1.08 "IBM Plex Serif", serif;
 }

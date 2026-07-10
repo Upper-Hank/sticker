@@ -9,6 +9,10 @@
   touch-action: none;
 }
 
+.mobile-view--article {
+  touch-action: pan-y;
+}
+
 .mobile-logo {
   position: absolute;
   z-index: 4;
@@ -157,6 +161,15 @@
 .mobile-ticket-sheet > p {
   margin: 16px 0 22px;
   font: 15px/1.45 "IBM Plex Sans", sans-serif;
+}
+
+.mobile-ticket-read {
+  padding: 0 0 4px;
+  border: 0;
+  border-bottom: 1px solid rgba(49, 49, 49, 0.35);
+  background: transparent;
+  color: #313131;
+  font: 14px "IBM Plex Sans", sans-serif;
 }
 
 @keyframes mobile-fade-in {

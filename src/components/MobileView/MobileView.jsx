@@ -4,8 +4,10 @@ import { Draggable } from 'gsap/Draggable'
 import { InertiaPlugin } from 'gsap/InertiaPlugin'
 import Graphic from '../Graphic/Graphic'
 import tickets from '../../data/tickets.json'
+import articles from '../../data/articles'
 import { getPathLength } from '../../utils/pathCache'
 import { createCardInteraction } from '../../animations/cardInteraction'
+import ArticleView from '../ArticleView/ArticleView'
 import './MobileView.css'
 
 gsap.registerPlugin(Draggable, InertiaPlugin)
@@ -46,11 +48,14 @@ function MobileView() {
   const occupiedIndexRef = useRef(null)
   const [ticketIndex, setTicketIndex] = useState(null)
   const [isTicketClosing, setIsTicketClosing] = useState(false)
+  const [articleIndex, setArticleIndex] = useState(null)
   const swipeStartRef = useRef(null)
   const sheetRef = useRef(null)
   const backdropRef = useRef(null)
   const sheetDragRef = useRef({ pointerId: null, startY: 0, distance: 0 })
   const closeTimelineRef = useRef(null)
+  const articleViewRef = useRef(null)
+  const articleTransitionApiRef = useRef(null)
   const cardInteraction = useMemo(() => createCardInteraction({
     reducedMotion: window.matchMedia('(prefers-reduced-motion: reduce)').matches,
   }), [])
@@ -79,6 +84,12 @@ function MobileView() {
   }
   const selectPrevious = () => setTicketIndex(index => Math.max(0, index - 1))
   const selectNext = () => setTicketIndex(index => Math.min(tickets.length - 1, index + 1))
+
+  const closeArticle = () => {
+    articleTransitionApiRef.current?.close()
+  }
+
+  const finishArticleClose = useCallback(() => setArticleIndex(null), [])
 
   useLayoutEffect(() => {
     const view = viewRef.current
@@ -267,7 +278,7 @@ function MobileView() {
   const activeTicket = ticketIndex == null ? null : tickets[ticketIndex]
 
   return (
-    <main className="mobile-view" ref={viewRef}>
+    <main className={`mobile-view${articleIndex != null ? ' mobile-view--article' : ''}`} ref={viewRef}>
       <div className="mobile-logo" ref={logoRef} aria-hidden="true">
         <Graphic name="logo" size={LOGO_INITIAL_SIZE} />
       </div>
@@ -366,8 +377,25 @@ function MobileView() {
               <strong>{activeTicket.letter}</strong>
             </div>
             <p>{activeTicket.intro[0]}<br />{activeTicket.intro[1]}</p>
+            <button className="mobile-ticket-read" type="button" onClick={() => setArticleIndex(ticketIndex)}>
+              Read the story
+            </button>
           </article>
         </div>
+      )}
+
+      {articleIndex != null && (
+        <ArticleView
+          article={articles[articleIndex]}
+          ticket={tickets[articleIndex]}
+          index={articleIndex}
+          variant="mobile"
+          viewRef={articleViewRef}
+          onBack={closeArticle}
+          showController
+          transitionApiRef={articleTransitionApiRef}
+          onTransitionClosed={finishArticleClose}
+        />
       )}
     </main>
   )

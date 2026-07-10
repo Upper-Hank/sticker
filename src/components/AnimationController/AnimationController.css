@@ -189,3 +189,36 @@
 .ac-dot:hover:not(:disabled) .ac-dot-core {
   background: rgba(83, 83, 83, 0.5);
 }
+
+.ac-article-ui {
+  position: absolute;
+  inset: 0;
+  visibility: hidden;
+}
+
+.ac-article-ui button {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  padding: 0 14px;
+  align-items: center;
+  gap: 12px;
+  justify-content: center;
+  border: 0;
+  background: transparent;
+  color: #535353;
+  cursor: pointer;
+}
+
+.ac-article-arrow {
+  display: block;
+  width: 18px;
+  height: 18px;
+}
+
+.ac-article-title {
+  overflow: hidden;
+  font: 13px "IBM Plex Sans", sans-serif;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

@@ -1,4 +1,4 @@
-import { useRef, useLayoutEffect, useMemo, useState } from 'react'
+import { useCallback, useRef, useLayoutEffect, useMemo, useState } from 'react'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { ScrollToPlugin } from 'gsap/ScrollToPlugin'
@@ -6,11 +6,13 @@ import { Draggable } from 'gsap/Draggable'
 import { InertiaPlugin } from 'gsap/InertiaPlugin'
 import { cells, getCellConfig, textBlocks, selectedCard as selectedCardKey } from './data/gridConfig'
 import tickets from './data/tickets.json'
+import articles from './data/articles'
 import Card from './components/Card/Card'
 import Graphic from './components/Graphic/Graphic'
 import Ticket from './components/Ticket/Ticket'
 import AnimationController from './components/AnimationController/AnimationController'
 import MobileView from './components/MobileView/MobileView'
+import FollowArticleTransition from './components/FollowArticleTransition/FollowArticleTransition'
 import { useAnimationState } from './hooks/useAnimationState'
 import { useIsMobile } from './hooks/useIsMobile'
 import { getPathLength } from './utils/pathCache'
@@ -59,6 +61,11 @@ function DesktopApp() {
   } = useAnimationState()
 
   const [visualTicketIndex, setVisualTicketIndex] = useState(0)
+  const [articleIndex, setArticleIndex] = useState(null)
+  const [articleProgress, setArticleProgress] = useState(0)
+  const [articleTransition, setArticleTransition] = useState(null)
+  const articleTransitionApiRef = useRef(null)
+  const pendingArticleRef = useRef(null)
 
   const cardInteraction = useMemo(() => createCardInteraction(), [])
   const cardInteractionProps = useMemo(() => ({
@@ -829,6 +836,43 @@ function DesktopApp() {
     apiRef.current.restartToStart?.()
   }
 
+  const handleArticleOpen = (index, event) => {
+    const ticketElement = event?.currentTarget?.closest('.ticket') || stackRefs.current[index]?.querySelector('.ticket')
+    const sourceElement = ticketElement?.querySelector('.ticket-right') || null
+    if (!sourceElement) return
+    if (stateRef.current.isAnimating) {
+      pendingArticleRef.current = { index, sourceElement }
+      return
+    }
+    if (stateRef.current.phase !== 'ticket') return
+    cardInteraction.cancelAll()
+    setArticleProgress(0)
+    setArticleTransition({ sourceElement })
+    setArticleIndex(index)
+  }
+
+  useLayoutEffect(() => {
+    if (isAnimating || phase !== 'ticket') return
+    const pending = pendingArticleRef.current
+    if (!pending) return
+
+    pendingArticleRef.current = null
+    cardInteraction.cancelAll()
+    setArticleProgress(0)
+    setArticleTransition({ sourceElement: pending.sourceElement })
+    setArticleIndex(pending.index)
+  }, [cardInteraction, isAnimating, phase])
+
+  const handleArticleBack = () => {
+    articleTransitionApiRef.current?.close()
+  }
+
+  const finishArticleClose = useCallback(() => {
+    setArticleIndex(null)
+    setArticleProgress(0)
+    setArticleTransition(null)
+  }, [])
+
   return (
     <div className="app" ref={appRef}>
       <div className="stage" ref={stageRef}>
@@ -892,6 +936,9 @@ function DesktopApp() {
               {tickets[0].intro.map((l, i) => (
                 <span key={i} className="ticket-intro-line">{l}</span>
               ))}
+              <button className="ticket-read" type="button" onClick={event => handleArticleOpen(0, event)}>
+                Read the story
+              </button>
             </div>
             <div className="ticket-logo">
               <Graphic name={tickets[0].logo} size={60} />
@@ -910,7 +957,9 @@ function DesktopApp() {
             >
               <Ticket
                 data={ticket}
+                article={articles[i]}
                 cardInteractionProps={cardInteractionProps}
+                onRead={event => handleArticleOpen(i, event)}
               />
             </div>
           ))}
@@ -929,6 +978,15 @@ function DesktopApp() {
           </div>
         </div>
 
+        {articleIndex != null && (
+          <FollowArticleTransition
+            sourceElement={articleTransition?.sourceElement}
+            apiRef={articleTransitionApiRef}
+            onClosed={finishArticleClose}
+            onProgress={setArticleProgress}
+          />
+        )}
+
         {/* ===== Animation Controller ===== */}
         <AnimationController
           phase={phase}
@@ -940,6 +998,9 @@ function DesktopApp() {
           onBack={handleBack}
           onTicketSelect={handleTicketSelect}
           onRestart={handleRestart}
+          isArticleOpen={articleIndex != null}
+          articleProgress={articleProgress}
+          onArticleBack={handleArticleBack}
         />
       </div>
     </div>

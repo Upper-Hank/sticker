@@ -1,0 +1,182 @@
+.article-view {
+  position: absolute;
+  z-index: 900;
+  inset: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 56px max(40px, calc((100vw - 1280px) / 2)) 150px;
+  background: #efefe7;
+  box-sizing: border-box;
+  color: #313131;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+}
+
+.article-content {
+  position: relative;
+  z-index: 2;
+}
+
+.article-hero {
+  display: grid;
+  max-width: 1280px;
+  margin: 0 auto 120px;
+  align-items: stretch;
+  gap: 40px;
+  grid-template-columns: minmax(360px, 0.85fr) minmax(520px, 1.15fr);
+}
+
+.article-visual {
+  display: flex;
+  min-height: 520px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 32px;
+}
+
+.article-heading {
+  display: flex;
+  padding: 28px 10px 20px;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.article-meta {
+  display: flex;
+  justify-content: space-between;
+  color: #535353;
+  font: 13px "IBM Plex Sans", sans-serif;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.article-heading h1 {
+  max-width: 760px;
+  margin: 72px 0 48px;
+  font: 400 clamp(66px, 7vw, 112px)/0.94 "IBM Plex Serif", serif;
+  letter-spacing: -0.04em;
+}
+
+.article-heading > p {
+  max-width: 680px;
+  margin: 0;
+  font: 24px/1.35 "IBM Plex Sans", sans-serif;
+}
+
+.article-body {
+  max-width: 860px;
+  margin: 0 auto;
+}
+
+.article-section {
+  display: grid;
+  margin-bottom: 100px;
+  gap: 36px;
+  grid-template-columns: 260px 1fr;
+}
+
+.article-section h2 {
+  margin: 0;
+  font: 400 30px/1.1 "IBM Plex Serif", serif;
+}
+
+.article-section p {
+  margin: 0;
+  font: 20px/1.65 "IBM Plex Sans", sans-serif;
+}
+
+.article-question {
+  margin: 150px 0 40px;
+  padding: 0;
+  border: 0;
+  font: 400 clamp(40px, 5vw, 68px)/1.08 "IBM Plex Serif", serif;
+}
+
+.article-mobile-controller {
+  position: fixed;
+  z-index: 10;
+  right: 18px;
+  bottom: max(18px, env(safe-area-inset-bottom));
+  left: 18px;
+  display: flex;
+  height: 48px;
+  padding: 0 8px 0 6px;
+  align-items: center;
+  justify-content: space-between;
+  border: 1px solid rgba(83, 83, 83, 0.18);
+  border-radius: 24px;
+  background: rgba(239, 239, 231, 0.92);
+  box-shadow: 0 8px 24px rgba(49, 49, 49, 0.08);
+  box-sizing: border-box;
+  backdrop-filter: blur(12px);
+}
+
+.article-mobile-controller button {
+  display: flex;
+  height: 38px;
+  padding: 0 12px;
+  align-items: center;
+  gap: 9px;
+  border: 0;
+  background: transparent;
+  color: #535353;
+  font: 13px "IBM Plex Sans", sans-serif;
+}
+
+.article-mobile-controller > span {
+  padding-right: 10px;
+  font: 12px "IBM Plex Sans", sans-serif;
+}
+
+.article-view--mobile {
+  position: absolute;
+  z-index: 200;
+  padding: 14px 16px 110px;
+}
+
+.article-view--mobile .article-hero {
+  display: block;
+  margin-bottom: 68px;
+}
+
+.article-view--mobile .article-visual {
+  min-height: 300px;
+  border-radius: 24px;
+}
+
+.article-view--mobile .article-heading {
+  padding: 24px 4px 0;
+}
+
+.article-view--mobile .article-heading h1 {
+  margin: 46px 0 28px;
+  font-size: clamp(48px, 14vw, 68px);
+}
+
+.article-view--mobile .article-heading > p {
+  font-size: 18px;
+}
+
+.article-view--mobile .article-section {
+  display: block;
+  margin-bottom: 64px;
+}
+
+.article-view--mobile .article-section h2 {
+  margin-bottom: 20px;
+  font-size: 28px;
+}
+
+.article-view--mobile .article-section p {
+  font-size: 17px;
+  line-height: 1.6;
+}
+
+.article-view--mobile .article-question {
+  margin: 92px 0 30px;
+  font-size: 42px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .article-view { scroll-behavior: auto; }
+}

@@ -1,11 +1,14 @@
 import { useRef, useEffect, useLayoutEffect, useMemo, useCallback, useState } from 'react'
 import gsap from 'gsap'
+import caretLeft from '../../assets/caret-left.svg'
 import './AnimationController.css'
 
 const SH = {
   progress: { width: 240, height: 4, radius: 2 },
   ready: { width: 44, height: 44, radius: 22 },
   ticket: { width: 204, height: 46, radius: 23 },
+  articleProgress: { width: 240, height: 4, radius: 2 },
+  articleBack: { width: 44, height: 44, radius: 22 },
   restart: { width: 44, height: 44, radius: 22 },
 }
 
@@ -13,6 +16,8 @@ const BG = {
   progress: { borderWidth: 0, borderColor: 'transparent', backgroundColor: 'rgba(83,83,83,0.15)', boxShadow: 'none' },
   ready: { borderWidth: 1.5, borderColor: 'rgba(83,83,83,0.25)', backgroundColor: 'rgba(239,239,231,0.95)', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' },
   ticket: { borderWidth: 1.5, borderColor: 'rgba(83,83,83,0.2)', backgroundColor: 'rgba(239,239,231,0.95)', boxShadow: '0 2px 12px rgba(0,0,0,0.06)' },
+  articleProgress: { borderWidth: 0, borderColor: 'transparent', backgroundColor: 'rgba(83,83,83,0.15)', boxShadow: 'none' },
+  articleBack: { borderWidth: 1.5, borderColor: 'rgba(83,83,83,0.25)', backgroundColor: 'rgba(239,239,231,0.95)', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' },
   restart: { borderWidth: 1.5, borderColor: 'rgba(83,83,83,0.25)', backgroundColor: 'rgba(239,239,231,0.95)', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' },
 }
 
@@ -28,6 +33,9 @@ function AnimationController({
   onBack,
   onTicketSelect,
   onRestart,
+  isArticleOpen = false,
+  articleProgress = 0,
+  onArticleBack,
 }) {
   const shellRef = useRef(null)
   const bgRef = useRef(null)
@@ -38,16 +46,18 @@ function AnimationController({
   const rightNavRef = useRef(null)
   const dotsContainerRef = useRef(null)
   const restartRef = useRef(null)
+  const articleRef = useRef(null)
 
   const prevVisualTickRef = useRef(visualTicketIndex)
   const visualTicketIndexRef = useRef(visualTicketIndex)
 
   const mode = useMemo(() => {
+    if (isArticleOpen) return articleProgress >= READY_PROGRESS ? 'articleBack' : 'articleProgress'
     if (phase === 'grid' && gridProgress < READY_PROGRESS) return 'progress'
     if (phase === 'grid') return 'ready'
     if (phase === 'ticket') return 'ticket'
     return 'restart'
-  }, [phase, gridProgress])
+  }, [phase, gridProgress, isArticleOpen, articleProgress])
 
   const ticketTotal = 5
   const isLastTicket = ticketIndex >= ticketTotal - 1
@@ -91,6 +101,7 @@ function AnimationController({
       arrowRef.current,
       ticketUIRef.current,
       restartRef.current,
+      articleRef.current,
       leftNavRef.current,
       rightNavRef.current,
     ].filter(Boolean)
@@ -126,6 +137,10 @@ function AnimationController({
       syncDots(visualTicketIndexRef.current, false)
     } else if (targetMode === 'restart') {
       gsap.set(restartRef.current, { autoAlpha: 1, scale: 1, rotate: 0 })
+    } else if (targetMode === 'articleProgress') {
+      gsap.set(progressRef.current, { autoAlpha: 1 })
+    } else if (targetMode === 'articleBack') {
+      gsap.set(articleRef.current, { autoAlpha: 1 })
     }
   }, [resetLayers, getAllDots, syncDots])
 
@@ -151,15 +166,17 @@ function AnimationController({
     const left = leftNavRef.current
     const right = rightNavRef.current
     const restart = restartRef.current
+    const article = articleRef.current
     const allCores = getAllDots()
     if (!shell || !bg) return
 
     activeTlRef.current?.kill()
-    gsap.killTweensOf([shell, bg, progress, arrow, ticketUI, left, right, restart, ...allCores].filter(Boolean))
+    gsap.killTweensOf([shell, bg, progress, arrow, ticketUI, left, right, restart, article, ...allCores].filter(Boolean))
 
     const tl = gsap.timeline({
       defaults: { overwrite: 'auto' },
       onComplete: () => {
+        snapToMode(mode)
         activeTlRef.current = null
         setIsTransitioning(false)
       },
@@ -168,7 +185,33 @@ function AnimationController({
     activeTlRef.current = tl
     setIsTransitioning(true)
 
-    if (prev === 'progress' && mode === 'ready') {
+    if (prev === 'ticket' && mode === 'articleProgress') {
+      tl.to(ticketUI, { autoAlpha: 0, duration: 0.16, ease: 'power2.in' }, 0)
+        .to([left, right, ...allCores], { autoAlpha: 0, scale: 0.7, duration: 0.15, ease: 'power2.in' }, 0)
+        .to(shell, { width: SH.articleProgress.width, height: SH.articleProgress.height, borderRadius: SH.articleProgress.radius, duration: 0.42, ease: 'power3.inOut' }, 0.05)
+        .to(bg, { ...BG.articleProgress, duration: 0.36, ease: 'power3.inOut' }, 0.05)
+        .fromTo(progress, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.18 }, 0.28)
+    } else if (prev === 'articleProgress' && mode === 'articleBack') {
+      tl.to(shell, { width: SH.articleBack.width, duration: 0.28, ease: 'power2.inOut' }, 0)
+        .to(progress, { autoAlpha: 0, duration: 0.16 }, 0.1)
+        .to(shell, { height: SH.articleBack.height, borderRadius: SH.articleBack.radius, duration: 0.3, ease: 'power3.inOut' }, 0.14)
+        .to(bg, { ...BG.articleBack, duration: 0.3, ease: 'power3.inOut' }, 0.14)
+        .fromTo(article, { autoAlpha: 0, scale: 0.55 }, { autoAlpha: 1, scale: 1, duration: 0.26, ease: 'back.out(1.7)' }, 0.24)
+    } else if (prev === 'articleBack' && mode === 'articleProgress') {
+      tl.to(article, { autoAlpha: 0, scale: 0.55, duration: 0.15 }, 0)
+        .to(bg, { ...BG.articleProgress, duration: 0.28 }, 0.1)
+        .to(shell, { height: SH.articleProgress.height, borderRadius: SH.articleProgress.radius, duration: 0.28, ease: 'power3.inOut' }, 0.1)
+        .to(progress, { autoAlpha: 1, duration: 0.14 }, 0.25)
+        .to(shell, { width: SH.articleProgress.width, duration: 0.3, ease: 'power2.inOut' }, 0.27)
+    } else if ((prev === 'articleBack' || prev === 'articleProgress') && mode === 'ticket') {
+      tl.to([article, progress], { autoAlpha: 0, duration: 0.14 }, 0)
+        .to(shell, { width: SH.ticket.width, height: SH.ticket.height, borderRadius: SH.ticket.radius, duration: 0.36, ease: 'power3.inOut' }, 0.06)
+        .to(bg, { ...BG.ticket, duration: 0.36, ease: 'power3.inOut' }, 0.06)
+        .fromTo(ticketUI, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.14 }, 0.18)
+        .fromTo([left, right], { autoAlpha: 0, scale: 0.8 }, { autoAlpha: 1, scale: 1, duration: 0.22 }, 0.2)
+        .call(() => syncDots(visualTicketIndexRef.current, false), [], 0.24)
+        .to(allCores, { autoAlpha: 1, scale: 1, duration: 0.18 }, 0.24)
+    } else if (prev === 'progress' && mode === 'ready') {
       tl.set([ticketUI, restart], { autoAlpha: 0 }, 0)
         .set(arrow, { autoAlpha: 0, scale: 0.5 }, 0)
         .to(shell, { width: SH.ready.width, duration: 0.28, ease: 'power2.inOut' }, 0)
@@ -252,7 +295,7 @@ function AnimationController({
   }, [visualTicketIndex, mode, syncDots])
 
   /* ---- progress fill live update ---- */
-  const fillScale = Math.max(0, Math.min(1, gridProgress))
+  const fillScale = Math.max(0, Math.min(1, isArticleOpen ? articleProgress : gridProgress))
 
   return (
     <div className={`ac${isControlDisabled ? ' ac--disabled' : ''}`}>
@@ -329,6 +372,12 @@ function AnimationController({
               <svg className="ac-icon-svg" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M17.9141 7.6377C18.1794 8.12183 18.0026 8.72954 17.5186 8.99512C17.0344 9.26073 16.4258 9.08285 16.1602 8.59863L14.4249 5.43457C14.4089 5.48373 14.3923 5.53345 14.376 5.58398C13.9386 6.94403 13.4213 8.77809 13.0879 10.6963C12.9605 11.4295 12.8619 12.1651 12.8038 12.8838C14.3655 12.809 15.9277 12.8563 17.2999 13.1299C19.1715 13.5031 20.9779 14.3601 21.6739 16.2109C22.1023 17.3507 22.1036 18.43 21.7042 19.3643C21.3102 20.2854 20.5756 20.9531 19.7344 21.3789C18.0823 22.2152 15.8252 22.2278 14.0225 21.2881C12.1394 20.3062 11.2582 18.479 10.9229 16.5293C10.8409 16.0522 10.7891 15.5592 10.7637 15.0566C8.88155 15.2696 7.07291 15.6116 5.6983 15.9121C4.9592 16.0737 4.34886 16.2224 3.92486 16.3301C3.71293 16.3839 3.54702 16.4271 3.4356 16.457C3.38032 16.4719 3.33841 16.4836 3.3106 16.4912C3.29667 16.495 3.28599 16.4982 3.27935 16.5C3.27625 16.5009 3.27398 16.5015 3.27252 16.502H3.27057C2.7389 16.6514 2.18661 16.3412 2.03717 15.8096C1.88805 15.278 2.19805 14.7266 2.72955 14.5771L3.00006 15.5391C2.73289 14.5886 2.72931 14.5774 2.72955 14.5771L2.73053 14.5762C2.73121 14.576 2.73232 14.5755 2.73346 14.5752C2.73573 14.5746 2.73919 14.5744 2.74322 14.5732C2.75169 14.5709 2.7645 14.5669 2.78033 14.5625C2.81198 14.5538 2.85847 14.5414 2.91803 14.5254C3.03751 14.4933 3.2117 14.4477 3.43267 14.3916C3.87492 14.2793 4.50666 14.125 5.27057 13.958C6.74431 13.6358 8.72322 13.2626 10.7862 13.042C10.8458 12.1363 10.9653 11.228 11.1172 10.3535C11.4718 8.31341 12.0174 6.38444 12.4717 4.97168C12.4751 4.96126 12.4782 4.95079 12.4815 4.94043L9.55572 6.33398C9.05717 6.57143 8.46026 6.3598 8.22271 5.86133C7.98525 5.36274 8.19681 4.76583 8.69537 4.52832L14.6524 1.69141L17.9141 7.6377ZM16.9092 15.0908C15.7048 14.8506 14.2644 14.807 12.7579 14.8867C12.7783 15.3393 12.8223 15.7758 12.8936 16.1904C13.1699 17.7973 13.8238 18.9288 14.9473 19.5146C16.188 20.1614 17.7643 20.1347 18.8311 19.5947C19.3494 19.3324 19.6947 18.9769 19.8653 18.5781C20.0302 18.1925 20.0798 17.6544 19.8018 16.915L16.9092 15.0908Z" fill="currentColor" />
               </svg>
+            </button>
+          </div>
+
+          <div className="ac-article-ui" ref={articleRef}>
+            <button type="button" onClick={onArticleBack} disabled={isControlDisabled || mode !== 'articleBack'} aria-label="Back to ticket">
+              <img className="ac-article-arrow" src={caretLeft} alt="" aria-hidden="true" />
             </button>
           </div>
         </div>
