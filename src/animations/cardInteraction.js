@@ -5,7 +5,7 @@ const PRESS_DURATION = 0.48
 const RELEASE_DURATION = 0.42
 const RELEASE_GRACE_MS = 120
 
-export function createCardInteraction() {
+export function createCardInteraction({ reducedMotion = false } = {}) {
   const stateMap = new WeakMap()
   const pathDataCache = new WeakMap()
   const activeCards = new Set()
@@ -87,14 +87,14 @@ export function createCardInteraction() {
       timeline.set(path, { autoAlpha: 1 }, 0.045)
       timeline.to(path, {
         strokeDashoffset: 0,
-        duration: RELEASE_DURATION,
+        duration: reducedMotion ? 0 : RELEASE_DURATION,
         ease: 'power2.inOut',
       }, 0)
     })
 
     timeline.to(state.card, {
       scale: 1,
-      duration: 0.46,
+      duration: reducedMotion ? 0 : 0.46,
       ease: 'back.out(2.1)',
     }, 0)
 
@@ -108,7 +108,7 @@ export function createCardInteraction() {
     state.direction = 'press'
     state.tween = gsap.to(state.progress, {
       value: 1,
-      duration: PRESS_DURATION * (1 - state.progress.value),
+      duration: reducedMotion ? 0 : PRESS_DURATION * (1 - state.progress.value),
       ease: 'power2.out',
       overwrite: true,
       onUpdate: () => render(state),
@@ -195,7 +195,7 @@ export function createCardInteraction() {
       } else {
         animateToPressed(state)
       }
-    }, RELEASE_GRACE_MS)
+    }, reducedMotion ? 0 : RELEASE_GRACE_MS)
   }
 
   const cancelAll = () => {
