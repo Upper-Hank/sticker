@@ -3,7 +3,7 @@ import Graphic from '../Graphic/Graphic'
 import Logo from '../Graphic/Graphic'
 import './Ticket.css'
 
-function Ticket({ data }) {
+function Ticket({ data, cardInteractionProps }) {
   const { bgColor, title, letter, intro, graphic, logo } = data
 
   return (
@@ -12,6 +12,7 @@ function Ticket({ data }) {
         <Card
           bgColor={bgColor}
           size={480}
+          interactionProps={cardInteractionProps}
         >
           <Graphic name={graphic} />
         </Card>

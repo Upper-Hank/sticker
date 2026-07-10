@@ -1,4 +1,4 @@
-import { useRef, useLayoutEffect, useState } from 'react'
+import { useRef, useLayoutEffect, useMemo, useState } from 'react'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { ScrollToPlugin } from 'gsap/ScrollToPlugin'
@@ -14,6 +14,7 @@ import MobileView from './components/MobileView/MobileView'
 import { useAnimationState } from './hooks/useAnimationState'
 import { useIsMobile } from './hooks/useIsMobile'
 import { getPathLength } from './utils/pathCache'
+import { createCardInteraction } from './animations/cardInteraction'
 import './App.css'
 
 gsap.registerPlugin(ScrollTrigger, ScrollToPlugin, Draggable, InertiaPlugin)
@@ -58,6 +59,17 @@ function DesktopApp() {
   } = useAnimationState()
 
   const [visualTicketIndex, setVisualTicketIndex] = useState(0)
+
+  const cardInteraction = useMemo(() => createCardInteraction(), [])
+  const cardInteractionProps = useMemo(() => ({
+    onPointerDown: (event) => {
+      const current = stateRef.current
+      if (current.isAnimating || (current.phase !== 'grid' && current.phase !== 'ticket')) return
+      cardInteraction.onPointerDown(event)
+    },
+    onPointerUp: cardInteraction.onPointerUp,
+    onPointerCancel: cardInteraction.onPointerCancel,
+  }), [cardInteraction, stateRef])
 
   const stepTimelinesRef = useRef([])
   const introTlRef = useRef(null)
@@ -413,6 +425,7 @@ function DesktopApp() {
         if (stateRef.current.phase !== 'grid' || stateRef.current.gridProgress < READY_PROGRESS) return
 
         setIsAnimating(true)
+        cardInteraction.cancelAll()
         stopHorizontalDamping()
 
         // The intro also animates the card's scale. Normalize that shared
@@ -452,6 +465,7 @@ function DesktopApp() {
         if (stateRef.current.phase !== 'ticket' || stateRef.current.ticketIndex !== 0) return
 
         setIsAnimating(true)
+        cardInteraction.cancelAll()
 
         const origReverse = tl1to2.eventCallback('onReverseComplete')
         tl1to2.eventCallback('onReverseComplete', () => {
@@ -470,6 +484,7 @@ function DesktopApp() {
         if (targetIndex < 0 || targetIndex > 4) return
 
         setIsAnimating(true)
+        cardInteraction.cancelAll()
 
         const step = (current) => {
           if (current === targetIndex) {
@@ -512,6 +527,7 @@ function DesktopApp() {
         if (stateRef.current.phase !== 'ticket' || stateRef.current.ticketIndex !== 4) return
 
         setIsAnimating(true)
+        cardInteraction.cancelAll()
 
         const origComplete = tl3to4.eventCallback('onComplete')
         tl3to4.eventCallback('onComplete', () => {
@@ -528,6 +544,7 @@ function DesktopApp() {
         if (stateRef.current.phase !== 'scatter') return
 
         setIsAnimating(true)
+        cardInteraction.cancelAll()
         killDraggable()
 
         const scatterEls = scatterGraphicsRef.current.filter(Boolean)
@@ -761,6 +778,7 @@ function DesktopApp() {
       if (ticker) gsap.ticker.remove(ticker)
       if (stInstance) stInstance.kill()
       draggableInstancesRef.current.forEach(d => d[0]?.kill())
+      cardInteraction.destroy()
       draggableInitedRef.current = false
       stepTimelinesRef.current = []
       ctx.revert()
@@ -829,7 +847,10 @@ function DesktopApp() {
                     data-cell={cell.key}
                   >
                     {cfg.type !== 'empty' && (
-                      <Card bgColor={cfg.bgColor}>
+                      <Card
+                        bgColor={cfg.bgColor}
+                        interactionProps={cardInteractionProps}
+                      >
                         <Graphic name={cfg.graphic} />
                       </Card>
                     )}
@@ -887,7 +908,10 @@ function DesktopApp() {
               ref={setStackRef(i)}
               style={{ zIndex: i + 1 }}
             >
-              <Ticket data={ticket} />
+              <Ticket
+                data={ticket}
+                cardInteractionProps={cardInteractionProps}
+              />
             </div>
           ))}
         </div>

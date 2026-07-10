@@ -1,6 +1,6 @@
 import './Card.css'
 
-function Card({ bgColor, size = 320, children, onClick }) {
+function Card({ bgColor, size = 320, children, interactionProps, onClick }) {
   const isLarge = size === 480
 
   const className = [
@@ -21,7 +21,9 @@ function Card({ bgColor, size = 320, children, onClick }) {
       style={style}
       onClick={onClick}
     >
-      {children}
+      <div className="card-interaction-layer" {...interactionProps}>
+        {children}
+      </div>
     </div>
   )
 }

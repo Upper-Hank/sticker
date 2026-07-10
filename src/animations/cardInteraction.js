@@ -1,83 +1,215 @@
 import gsap from 'gsap'
 import { getPathLength } from '../utils/pathCache'
 
-// Temporarily offline. This factory preserves the card press/SVG erase-draw
-// interaction without wiring it into Card or Ticket.
-export function createCardInteraction({ canAnimate, isIntroActive }) {
-  const pressMap = new WeakMap()
-  const animationMap = new WeakMap()
+const PRESS_DURATION = 0.48
+const RELEASE_DURATION = 0.42
+const RELEASE_GRACE_MS = 120
+
+export function createCardInteraction() {
+  const stateMap = new WeakMap()
   const pathDataCache = new WeakMap()
-  const eraseDuration = 0.6
+  const activeCards = new Set()
 
   const getPaths = (card) => {
-    if (pathDataCache.has(card)) return pathDataCache.get(card)
-    const data = Array.from(card.querySelectorAll('.graphic-path')).map((path) => {
-      const len = getPathLength(path)
-      return { path, len, dash: `${len} ${len * 2}` }
-    })
+    const cached = pathDataCache.get(card)
+    if (cached) return cached
+
+    const data = Array.from(card.querySelectorAll('.graphic-path'))
+      .map((path) => {
+        const len = getPathLength(path)
+        return { path, len, dash: `${len} ${len}` }
+      })
+      .filter(({ len }) => len > 0)
+
     pathDataCache.set(card, data)
     return data
   }
 
-  const setVisible = (data) => data.forEach(({ path, dash }) => gsap.set(path, {
-    autoAlpha: 1, strokeDasharray: dash, strokeDashoffset: 0,
-  }))
+  const render = (state) => {
+    const progress = gsap.utils.clamp(0, 1, state.progress.value)
+    gsap.set(state.card, { scale: 1 + progress * 0.12 })
 
-  const cleanup = (card) => {
-    pressMap.delete(card)
-    animationMap.delete(card)
-    gsap.set(card, { scale: 1, clearProps: 'willChange' })
+    state.paths.forEach(({ path, len, dash }) => {
+      gsap.set(path, {
+        autoAlpha: progress < 0.995 ? 1 : 0,
+        strokeDasharray: dash,
+        strokeDashoffset: -len * progress,
+      })
+    })
   }
 
-  const reset = (card) => {
-    setVisible(getPaths(card))
-    cleanup(card)
+  const clearReleaseTimer = (state) => {
+    if (state.releaseTimer == null) return
+    window.clearTimeout(state.releaseTimer)
+    state.releaseTimer = null
+  }
+
+  const cleanup = (state, resumeQueuedPress = true) => {
+    clearReleaseTimer(state)
+    state.tween?.kill()
+    state.tween = null
+    state.pressed = false
+    state.releaseRequested = false
+    state.locked = false
+    state.progress.value = 0
+    render(state)
+    gsap.set(state.card, { clearProps: 'transform,willChange' })
+
+    if (resumeQueuedPress && state.queuedPressed) {
+      state.pressed = true
+      state.pointerId = state.queuedPointerId
+      state.queuedPressed = false
+      state.queuedPointerId = null
+      gsap.set(state.card, { willChange: 'transform' })
+      animateToPressed(state)
+      return
+    }
+
+    if (state.queuedPointerId != null && state.card.hasPointerCapture?.(state.queuedPointerId)) {
+      state.card.releasePointerCapture(state.queuedPointerId)
+    }
+    stateMap.delete(state.card)
+    activeCards.delete(state.card)
+  }
+
+  const animateToRest = (state) => {
+    state.tween?.kill()
+    state.direction = 'release'
+    const paths = state.paths.map(({ path }) => path)
+    const timeline = gsap.timeline({ onComplete: () => cleanup(state) })
+
+    timeline.set(paths, { autoAlpha: 0 }, 0)
+    state.paths.forEach(({ path, len, dash }) => {
+      timeline.set(path, {
+        strokeDasharray: dash,
+        strokeDashoffset: len,
+      }, 0)
+      timeline.set(path, { autoAlpha: 1 }, 0.045)
+      timeline.to(path, {
+        strokeDashoffset: 0,
+        duration: RELEASE_DURATION,
+        ease: 'power2.inOut',
+      }, 0)
+    })
+
+    timeline.to(state.card, {
+      scale: 1,
+      duration: 0.46,
+      ease: 'back.out(2.1)',
+    }, 0)
+
+    state.tween = timeline
+  }
+
+  const animateToPressed = (state) => {
+    if (state.direction === 'press' && state.tween?.isActive()) return
+
+    state.tween?.kill()
+    state.direction = 'press'
+    state.tween = gsap.to(state.progress, {
+      value: 1,
+      duration: PRESS_DURATION * (1 - state.progress.value),
+      ease: 'power2.out',
+      overwrite: true,
+      onUpdate: () => render(state),
+      onComplete: () => {
+        state.tween = null
+        if (state.releaseRequested && !state.pressed) animateToRest(state)
+      },
+    })
+  }
+
+  const getState = (card) => {
+    const existing = stateMap.get(card)
+    if (existing) return existing
+
+    const state = {
+      card,
+      paths: getPaths(card),
+      progress: { value: 0 },
+      tween: null,
+      direction: null,
+      pointerId: null,
+      pressed: false,
+      releaseRequested: false,
+      locked: false,
+      queuedPressed: false,
+      queuedPointerId: null,
+      releaseTimer: null,
+    }
+
+    stateMap.set(card, state)
+    activeCards.add(card)
+    render(state)
+    return state
   }
 
   const onPointerDown = (event) => {
-    if (!canAnimate() || isIntroActive()) return
+    if (event.button !== undefined && event.button !== 0) return
+
     const card = event.currentTarget
-    if (animationMap.has(card)) return
+    const state = getState(card)
+    if (state.locked) {
+      state.queuedPressed = true
+      state.queuedPointerId = event.pointerId
+      card.setPointerCapture(event.pointerId)
+      return
+    }
+    clearReleaseTimer(state)
+    state.pressed = true
+    state.releaseRequested = false
+    state.pointerId = event.pointerId
+
     card.setPointerCapture(event.pointerId)
-    const data = getPaths(card)
-    setVisible(data)
-    const tl = gsap.timeline({
-      defaults: { overwrite: 'auto' },
-      onInterrupt: () => reset(card),
-    })
-    tl.set(card, { willChange: 'transform' })
-      .to(card, { scale: 1.18, duration: eraseDuration, ease: 'power2.out' }, 0)
-    data.forEach(({ path, len }) => tl.to(path, {
-      strokeDashoffset: -len, duration: eraseDuration, ease: 'power2.inOut',
-    }, 0))
-    tl.set(data.map(({ path }) => path), { autoAlpha: 0 }, eraseDuration - 0.025)
-    pressMap.set(card, { tl, data, pointerId: event.pointerId })
-    animationMap.set(card, tl)
+    gsap.set(card, { willChange: 'transform' })
+    animateToPressed(state)
   }
 
   const finish = (event) => {
-    const card = event.currentTarget
-    if (card.hasPointerCapture?.(event.pointerId)) card.releasePointerCapture(event.pointerId)
-    const state = pressMap.get(card)
+    const state = stateMap.get(event.currentTarget)
+    if (state?.locked && state.queuedPointerId === event.pointerId) {
+      if (state.card.hasPointerCapture?.(event.pointerId)) {
+        state.card.releasePointerCapture(event.pointerId)
+      }
+      state.queuedPressed = false
+      state.queuedPointerId = null
+      return
+    }
     if (!state || state.pointerId !== event.pointerId) return
-    state.tl.kill()
-    pressMap.delete(card)
-    const paths = state.data.map(({ path }) => path)
-    const tl = gsap.timeline({ onComplete: () => cleanup(card), onInterrupt: () => reset(card) })
-    tl.set(paths, { autoAlpha: 0 })
-    state.data.forEach(({ path, len, dash }) => {
-      tl.set(path, { autoAlpha: 0, strokeDasharray: dash, strokeDashoffset: len }, 0)
-      tl.set(path, { autoAlpha: 1 }, 0.045)
-      tl.to(path, { strokeDashoffset: 0, duration: 0.4, ease: 'power2.inOut' }, 0)
+
+    if (state.card.hasPointerCapture?.(event.pointerId)) {
+      state.card.releasePointerCapture(event.pointerId)
+    }
+
+    state.pressed = false
+    state.pointerId = null
+    clearReleaseTimer(state)
+    state.releaseTimer = window.setTimeout(() => {
+      state.releaseTimer = null
+      if (state.pressed) return
+
+      state.locked = true
+      state.releaseRequested = true
+      if (state.progress.value >= 0.999 && !state.tween) {
+        animateToRest(state)
+      } else {
+        animateToPressed(state)
+      }
+    }, RELEASE_GRACE_MS)
+  }
+
+  const cancelAll = () => {
+    Array.from(activeCards).forEach(card => {
+      const state = stateMap.get(card)
+      if (state) cleanup(state, false)
     })
-    tl.to(card, { scale: 1, duration: 0.46, ease: 'back.out(2.1)' }, 0)
-    animationMap.set(card, tl)
   }
 
-  const destroy = () => {
-    // WeakMaps are intentionally not enumerable; active timelines remain owned
-    // by their GSAP context when this factory is eventually wired back in.
+  return {
+    onPointerDown,
+    onPointerUp: finish,
+    onPointerCancel: finish,
+    cancelAll,
+    destroy: cancelAll,
   }
-
-  return { onPointerDown, onPointerUp: finish, onPointerCancel: finish, destroy }
 }
