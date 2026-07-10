@@ -16,6 +16,7 @@
 .mobile-logo {
   position: absolute;
   z-index: 4;
+  visibility: hidden;
   will-change: left, top, width, height;
 }
 
@@ -35,6 +36,7 @@
   width: 96px;
   height: 96px;
   cursor: grab;
+  visibility: hidden;
   touch-action: none;
   user-select: none;
   will-change: left, top, transform;
@@ -89,6 +91,7 @@
 }
 
 .mobile-ticket-sheet {
+  position: relative;
   width: 100%;
   padding: 10px 20px max(24px, env(safe-area-inset-bottom));
   border-radius: 28px 28px 0 0;
@@ -135,14 +138,14 @@
 }
 
 .mobile-ticket-heading {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
+  display: grid;
+  align-items: center;
   margin-top: 16px;
+  grid-template-columns: 1fr auto 1fr;
 }
 
 .mobile-ticket-heading h2,
-.mobile-ticket-heading strong {
+.mobile-ticket-letter {
   margin: 0;
   font-size: 46px;
   line-height: 1;
@@ -153,23 +156,258 @@
   font-weight: 400;
 }
 
-.mobile-ticket-heading strong {
+.mobile-ticket-letter {
   font-family: "IBM Plex Sans", sans-serif;
-  text-transform: uppercase;
+  font-weight: 700;
+  grid-column: 3;
+  justify-self: end;
 }
 
-.mobile-ticket-sheet > p {
-  margin: 16px 0 22px;
+.mobile-ticket-logo {
+  position: absolute;
+  right: 20px;
+  bottom: max(24px, env(safe-area-inset-bottom));
+  display: flex;
+}
+
+.mobile-ticket-intro {
+  display: flex;
+  margin-top: 16px;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.mobile-ticket-intro-line {
+  display: block;
   font: 15px/1.45 "IBM Plex Sans", sans-serif;
 }
 
 .mobile-ticket-read {
+  margin-top: 22px;
   padding: 0 0 4px;
   border: 0;
   border-bottom: 1px solid rgba(49, 49, 49, 0.35);
   background: transparent;
   color: #313131;
   font: 14px "IBM Plex Sans", sans-serif;
+}
+
+.mobile-ticket-read:active {
+  transform: scale(0.98);
+}
+
+.mobile-ticket-sheet--article {
+  height: 100%;
+  padding: max(24px, env(safe-area-inset-top)) 20px max(80px, env(safe-area-inset-bottom));
+  overflow: visible;
+  border-radius: 0;
+  overscroll-behavior: contain;
+}
+
+.mobile-ticket-sheet:not(.mobile-ticket-sheet--article) .mobile-ticket-article {
+  display: none;
+}
+
+.mobile-ticket-sheet--prelude .mobile-ticket-logo {
+  position: static;
+  justify-self: center;
+}
+
+.mobile-ticket-sheet--prelude .mobile-ticket-intro {
+  pointer-events: none;
+}
+
+.mobile-ticket-sheet--article .mobile-ticket-handle {
+  display: none;
+}
+
+.mobile-ticket-sheet--article .mobile-ticket-visual {
+  position: absolute;
+  z-index: 2;
+  top: max(80px, 12vh);
+  right: 20px;
+  left: 20px;
+  height: min(42vh, 360px);
+}
+
+.mobile-ticket-sheet--article .mobile-ticket-heading {
+  position: sticky;
+  z-index: 5;
+  top: 0;
+  height: 44px;
+  margin: 0;
+}
+
+.mobile-ticket-sheet--article .mobile-ticket-heading::before {
+  position: absolute;
+  z-index: -1;
+  top: calc(-1 * max(24px, env(safe-area-inset-top)));
+  left: -20px;
+  width: calc(100% + 40px);
+  height: 108px;
+  background: linear-gradient(to bottom, #efefe7 0%, #efefe7 52%, rgba(239, 239, 231, 0) 100%);
+  content: '';
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+}
+
+.mobile-ticket-sheet--reading .mobile-ticket-heading::before {
+  opacity: 1;
+}
+
+.mobile-ticket-sheet--article .mobile-ticket-title,
+.mobile-ticket-sheet--article .mobile-ticket-letter {
+  font-size: 22px;
+  line-height: 28px;
+}
+
+.mobile-ticket-sheet--article .mobile-ticket-logo {
+  position: static;
+  justify-self: center;
+}
+
+.mobile-ticket-sheet--article .mobile-ticket-intro {
+  position: absolute;
+  top: 50%;
+  left: 20px;
+}
+
+.mobile-ticket-article {
+  padding: 84px 4px 40px;
+}
+
+.mobile-article-controller {
+  position: fixed;
+  z-index: 1000;
+  bottom: max(22px, env(safe-area-inset-bottom));
+  left: 50%;
+  height: 48px;
+  width: 240px;
+  transform: translateX(-50%);
+}
+
+.mobile-article-control-shell {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 240px;
+  height: 4px;
+  overflow: hidden;
+  border: 0 solid rgba(83, 83, 83, 0.25);
+  border-radius: 2px;
+  background: rgba(83, 83, 83, 0.15);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  box-sizing: border-box;
+  transform: translate(-50%, -50%);
+  transition:
+    width 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+    height 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+    border-radius 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+    border-width 0.3s ease,
+    background-color 0.3s ease;
+}
+
+.mobile-article-control-progress {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: #535353;
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 0.1s linear, opacity 0.14s ease;
+}
+
+.mobile-article-control-button {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  padding: 0;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: transparent;
+  color: #535353;
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.55);
+  transition: opacity 0.2s ease, transform 0.24s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.mobile-article-control-button svg {
+  width: 18px;
+  height: 18px;
+}
+
+.mobile-article-controller--ready .mobile-article-control-shell {
+  width: 44px;
+  height: 44px;
+  border-width: 1.5px;
+  border-radius: 22px;
+  background: rgba(239, 239, 231, 0.95);
+}
+
+.mobile-article-controller--ready .mobile-article-control-progress {
+  opacity: 0;
+}
+
+.mobile-article-controller--ready .mobile-article-control-button {
+  opacity: 1;
+  pointer-events: auto;
+  transform: scale(1);
+}
+
+.mobile-ticket-sheet--reading {
+  overflow-x: hidden;
+  overflow-y: auto;
+  touch-action: pan-y;
+}
+
+.mobile-ticket-sheet--closing {
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.mobile-article-hero > span {
+  font: 12px "IBM Plex Sans", sans-serif;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.mobile-article-hero h1 {
+  margin: 38px 0 26px;
+  font: 400 clamp(48px, 14vw, 68px)/0.96 "IBM Plex Serif", serif;
+  letter-spacing: -0.04em;
+}
+
+.mobile-article-hero > p {
+  margin: 0;
+  font: 18px/1.45 "IBM Plex Sans", sans-serif;
+}
+
+.mobile-article-sections {
+  margin-top: 92px;
+}
+
+.mobile-article-sections section {
+  margin-bottom: 64px;
+}
+
+.mobile-article-sections h2 {
+  margin: 0 0 20px;
+  font: 400 28px/1.15 "IBM Plex Serif", serif;
+}
+
+.mobile-article-sections p {
+  margin: 0;
+  font: 17px/1.6 "IBM Plex Sans", sans-serif;
+}
+
+.mobile-article-sections blockquote {
+  margin: 92px 0 30px;
+  padding: 0;
+  border: 0;
+  font: 400 42px/1.08 "IBM Plex Serif", serif;
 }
 
 @keyframes mobile-fade-in {
@@ -184,7 +422,7 @@
   .mobile-puzzle { bottom: 122px; }
   .mobile-ticket-visual { height: 132px; }
   .mobile-ticket-heading h2,
-  .mobile-ticket-heading strong { font-size: 36px; }
+  .mobile-ticket-letter { font-size: 36px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -9,8 +9,6 @@ function ArticleView({
   index,
   variant = 'desktop',
   viewRef,
-  onBack,
-  showController = false,
   transitionApiRef,
   onTransitionClosed,
 }) {
@@ -93,15 +91,6 @@ function ArticleView({
           <blockquote className="article-question article-reveal">{article.question}</blockquote>
         </div>
 
-        {showController && (
-          <div className="article-mobile-controller">
-            <button type="button" onClick={onBack} aria-label="Back to ticket">
-              <span aria-hidden="true">←</span>
-              Back to ticket
-            </button>
-            <span>{String(index + 1).padStart(2, '0')} / 05</span>
-          </div>
-        )}
       </div>
     </article>
   )

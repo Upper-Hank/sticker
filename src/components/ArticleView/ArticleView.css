@@ -92,42 +92,6 @@
   font: 400 clamp(40px, 5vw, 68px)/1.08 "IBM Plex Serif", serif;
 }
 
-.article-mobile-controller {
-  position: fixed;
-  z-index: 10;
-  right: 18px;
-  bottom: max(18px, env(safe-area-inset-bottom));
-  left: 18px;
-  display: flex;
-  height: 48px;
-  padding: 0 8px 0 6px;
-  align-items: center;
-  justify-content: space-between;
-  border: 1px solid rgba(83, 83, 83, 0.18);
-  border-radius: 24px;
-  background: rgba(239, 239, 231, 0.92);
-  box-shadow: 0 8px 24px rgba(49, 49, 49, 0.08);
-  box-sizing: border-box;
-  backdrop-filter: blur(12px);
-}
-
-.article-mobile-controller button {
-  display: flex;
-  height: 38px;
-  padding: 0 12px;
-  align-items: center;
-  gap: 9px;
-  border: 0;
-  background: transparent;
-  color: #535353;
-  font: 13px "IBM Plex Sans", sans-serif;
-}
-
-.article-mobile-controller > span {
-  padding-right: 10px;
-  font: 12px "IBM Plex Sans", sans-serif;
-}
-
 .article-view--mobile {
   position: absolute;
   z-index: 200;
