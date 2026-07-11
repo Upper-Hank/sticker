@@ -70,11 +70,41 @@ function FollowArticleTransition({ sourceElement, apiRef, onClosed, onProgress }
     const fullScreenX = -sourceRect.left + cameraDistance - overscan
     let expansionTimeline = null
     let isClosing = false
+    let resizeFrame = null
 
     const updateProgress = () => {
       const maxScroll = sourceElement.scrollHeight - sourceElement.clientHeight
       onProgress(maxScroll > 0 ? sourceElement.scrollTop / maxScroll : 1)
     }
+
+    const refreshExpandedLayout = () => {
+      if (!expansionTimeline || expansionTimeline.progress() < 0.999 || expansionTimeline.reversed()) return
+      const rect = getRect(sourceElement)
+      const currentX = Number(gsap.getProperty(sourceElement, 'x')) || 0
+      const currentY = Number(gsap.getProperty(sourceElement, 'y')) || 0
+      const paddingX = Math.max(40, (window.innerWidth - 1200) / 2) + overscan
+
+      gsap.set(sourceElement, {
+        x: currentX - overscan - rect.left,
+        y: currentY - overscan - rect.top,
+        width: window.innerWidth + overscan * 2,
+        height: window.innerHeight + overscan * 2,
+        paddingRight: paddingX,
+        paddingLeft: paddingX,
+      })
+      updateProgress()
+    }
+
+    const handleResize = () => {
+      if (resizeFrame != null) cancelAnimationFrame(resizeFrame)
+      resizeFrame = requestAnimationFrame(() => {
+        resizeFrame = null
+        refreshExpandedLayout()
+      })
+    }
+
+    window.addEventListener('resize', handleResize, { passive: true })
+    window.visualViewport?.addEventListener('resize', handleResize, { passive: true })
 
     const restoreCenteredState = () => {
       sourceElement.classList.remove('ticket-right--article')
@@ -258,6 +288,9 @@ function FollowArticleTransition({ sourceElement, apiRef, onClosed, onProgress }
 
     return () => {
       sourceElement.removeEventListener('scroll', updateProgress)
+      window.removeEventListener('resize', handleResize)
+      window.visualViewport?.removeEventListener('resize', handleResize)
+      if (resizeFrame != null) cancelAnimationFrame(resizeFrame)
       expansionTimeline?.kill()
       followTimeline.kill()
       apiRef.current = null

@@ -6,7 +6,7 @@ import { Draggable } from 'gsap/Draggable'
 import { InertiaPlugin } from 'gsap/InertiaPlugin'
 import { cells, getCellConfig, textBlocks, selectedCard as selectedCardKey } from './data/gridConfig'
 import tickets from './data/tickets.json'
-import articles from './data/articles'
+import articlesByTicketId from './articles/registry'
 import Card from './components/Card/Card'
 import Graphic from './components/Graphic/Graphic'
 import Ticket from './components/Ticket/Ticket'
@@ -64,6 +64,7 @@ function DesktopApp() {
   const [articleIndex, setArticleIndex] = useState(null)
   const [articleProgress, setArticleProgress] = useState(0)
   const [articleTransition, setArticleTransition] = useState(null)
+  const [isArticleClosing, setIsArticleClosing] = useState(false)
   const articleTransitionApiRef = useRef(null)
   const pendingArticleRef = useRef(null)
 
@@ -84,8 +85,6 @@ function DesktopApp() {
   const apiRef = useRef({})
 
   const totalScroll = 12000
-  const gridW = 4420
-
   useLayoutEffect(() => {
     window.scrollTo(0, 0)
 
@@ -100,15 +99,69 @@ function DesktopApp() {
     let stInstance = null
     let handleWheel = null
     let ticker = null
+    let resizeObserver = null
+    let resizeFrame = null
+    let resizeEndTimer = null
+    let scheduleLayoutRefresh = null
     let isScrollReady = false
 
     const ctx = gsap.context(() => {
-      const vw = window.innerWidth
-      const vh = window.innerHeight
-      const ticketX = Math.round((vw - 1280) / 2)
-      const ticketY = Math.round((vh - 520) / 2)
       const stackItems = stackRefs.current.filter(Boolean)
       const firstTicket = stackItems[0]
+      const selectCell = grid.querySelector(`[data-cell="${selectedCardKey}"]`)
+      const selectedCard = selectCell?.querySelector('.card')
+      const selectedGraphic = selectCell?.querySelector('.graphic')
+      const firstTicketCard = firstTicket?.querySelector('.ticket-left .card')
+      const firstTicketLeft = firstTicket?.querySelector('.ticket-left')
+      const layout = {
+        vw: stage.clientWidth,
+        vh: stage.clientHeight,
+        stepGridTargetX: 0,
+        gridTargetX: 0,
+        gridTargetY: 0,
+        panelTargetLeft: 0,
+        panelTargetTop: 0,
+        panelTargetWidth: 0,
+        panelTargetHeight: 0,
+        cardStartSize: 320,
+        cardTargetSize: 480,
+      }
+
+      const measureLayout = () => {
+        layout.vw = stage.clientWidth
+        layout.vh = stage.clientHeight
+
+        const cellLeft = selectCell?.offsetLeft ?? 0
+        const cellTop = selectCell?.offsetTop ?? 0
+        const cellW = selectCell?.offsetWidth ?? 0
+        const cellH = selectCell?.offsetHeight ?? 0
+        const selectedCellCenterX = cellLeft + cellW / 2
+        const maxScrollX = Math.max(0, grid.scrollWidth - layout.vw)
+        const scrollX = selectCell
+          ? gsap.utils.clamp(0, maxScrollX, selectedCellCenterX - layout.vw / 2)
+          : maxScrollX
+        const styles = getComputedStyle(stage)
+        const configuredCardSize = Number.parseFloat(styles.getPropertyValue('--grid-card-size'))
+        const leftTargetRect = firstTicketLeft?.getBoundingClientRect()
+        const cardTargetRect = firstTicketCard?.getBoundingClientRect()
+
+        layout.stepGridTargetX = -scrollX
+        layout.cardStartSize = configuredCardSize || 320
+
+        if (leftTargetRect && cardTargetRect) {
+          layout.cardTargetSize = cardTargetRect.width
+          layout.panelTargetLeft = leftTargetRect.left
+          layout.panelTargetTop = leftTargetRect.top
+          layout.panelTargetWidth = leftTargetRect.width
+          layout.panelTargetHeight = leftTargetRect.height
+          layout.gridTargetX = cardTargetRect.left - leftTargetRect.left
+            - (cellLeft + (cellW - cardTargetRect.width) / 2)
+          layout.gridTargetY = cardTargetRect.top - leftTargetRect.top
+            - (cellTop + (cellH - cardTargetRect.height) / 2)
+        }
+      }
+
+      measureLayout()
 
       gsap.set(stackItems, {
         x: 0, y: 0, rotation: 0, scale: 1, autoAlpha: 0,
@@ -117,8 +170,6 @@ function DesktopApp() {
       gsap.set(scatterRef.current, { display: 'none' })
       gsap.set(stage, {
         backgroundColor: '#E2DFD0',
-        '--ticket-x': `${ticketX}px`,
-        '--ticket-y': `${ticketY}px`,
       })
 
       /* ===== Phase 0: Card Intro (plays on mount) ===== */
@@ -177,9 +228,9 @@ function DesktopApp() {
 
           const rect = block.getBoundingClientRect()
           const isVisible = (
-            rect.left < vw
+            rect.left < layout.vw
             && rect.right > 0
-            && rect.top < vh
+            && rect.top < layout.vh
             && rect.bottom > 0
           )
           if (!isVisible) return
@@ -196,23 +247,7 @@ function DesktopApp() {
       }
 
       /* ===== Target cell & layout values ===== */
-      const selectCell = grid.querySelector(`[data-cell="${selectedCardKey}"]`)
-      const selectedCard = selectCell?.querySelector('.card')
-      const selectedGraphic = selectCell?.querySelector('.graphic')
-      const firstTicketCard = firstTicket?.querySelector('.ticket-left .card')
-      const firstTicketLeft = firstTicket?.querySelector('.ticket-left')
-      const cellLeft = selectCell?.offsetLeft ?? 0
-      const cellTop = selectCell?.offsetTop ?? 0
-      const cellW = selectCell?.offsetWidth ?? 0
-      const cellH = selectCell?.offsetHeight ?? 0
-      const selectedCellCenterX = cellLeft + cellW / 2
-      const maxScrollX = Math.max(0, gridW - vw)
-      const scrollX = selectCell
-        ? gsap.utils.clamp(0, maxScrollX, selectedCellCenterX - vw / 2)
-        : Math.max(0, gridW - vw + 100)
-
       /* ===== Phase 1 Horizontal state ===== */
-      const stepGridTargetX = -scrollX
       const horizontalState = {
         targetProgress: 0,
         currentProgress: 0,
@@ -233,7 +268,7 @@ function DesktopApp() {
 
       const renderHorizontalGrid = (nextProgress) => {
         horizontalState.progress = nextProgress
-        gsap.set(grid, { y: 0, x: stepGridTargetX * nextProgress })
+        gsap.set(grid, { y: 0, x: layout.stepGridTargetX * nextProgress })
         if (hasStartedScrolling) revealVisibleTextBlocks()
         return nextProgress
       }
@@ -246,43 +281,31 @@ function DesktopApp() {
       const tl1to2 = gsap.timeline({ paused: true })
 
       if (selectCell && selectedCard && selectedGraphic && firstTicket && firstTicketCard && firstTicketLeft) {
-        const cardTargetSize = 480
-        const leftTargetRect = firstTicketLeft.getBoundingClientRect()
-        const cardTargetRect = firstTicketCard.getBoundingClientRect()
-        const cardTargetLeftInPanel = cardTargetRect.left - leftTargetRect.left
-        const cardTargetTopInPanel = cardTargetRect.top - leftTargetRect.top
-        const finalCardLeftInGrid = cellLeft + (cellW - cardTargetSize) / 2
-        const finalCardTopInGrid = cellTop + (cellH - cardTargetSize) / 2
-        const gridTargetX = cardTargetLeftInPanel - finalCardLeftInGrid
-        const gridTargetY = cardTargetTopInPanel - finalCardTopInGrid
-        const panelTargetLeft = leftTargetRect.left
-        const panelTargetTop = leftTargetRect.top
-
         tl1to2
           .set([gridPanel, selectedCard], { willChange: 'transform, width, height, border-radius, opacity' }, 0)
           .to(`[data-cell]:not([data-cell="${selectedCardKey}"]), .grid-text`, { autoAlpha: 0, duration: 0.12 }, 0)
           .to(gridPanel, {
-            left: panelTargetLeft,
-            top: panelTargetTop,
-            width: leftTargetRect.width,
-            height: leftTargetRect.height,
+            left: () => layout.panelTargetLeft,
+            top: () => layout.panelTargetTop,
+            width: () => layout.panelTargetWidth,
+            height: () => layout.panelTargetHeight,
             borderRadius: 32,
             duration: 0.48,
             ease: 'power3.inOut',
           }, 0.04)
           .to(grid, {
-            x: gridTargetX,
-            y: gridTargetY,
+            x: () => layout.gridTargetX,
+            y: () => layout.gridTargetY,
             duration: 0.48,
             ease: 'power3.inOut',
           }, 0.04)
           .fromTo(selectedCard, {
-            width: 320,
-            height: 320,
+            width: () => layout.cardStartSize,
+            height: () => layout.cardStartSize,
             borderRadius: 20,
           }, {
-            width: cardTargetSize,
-            height: cardTargetSize,
+            width: () => layout.cardTargetSize,
+            height: () => layout.cardTargetSize,
             borderRadius: 24,
             duration: 0.48,
             ease: 'power3.inOut',
@@ -290,7 +313,7 @@ function DesktopApp() {
           }, 0.04)
           .call(() => { rightPanel.style.display = 'flex' }, [], 0.28)
           .set(rightPanel, { autoAlpha: 1, willChange: 'transform' }, 0.28)
-          .fromTo(rightPanel, { x: vw }, { x: 0, duration: 0.28, ease: 'power3.out' }, 0.28)
+          .fromTo(rightPanel, { x: () => layout.vw }, { x: 0, duration: 0.28, ease: 'power3.out' }, 0.28)
           .fromTo(ticketStage, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.02 }, 0.58)
           .fromTo(firstTicket, { autoAlpha: 0 }, { autoAlpha: 1, duration: 0.02 }, 0.58)
           .to([gridPanel, rightPanel], { autoAlpha: 0, duration: 0.08 }, 0.62)
@@ -319,7 +342,7 @@ function DesktopApp() {
         ticketTl
           .set([ticket, prev], { willChange: 'transform, opacity' }, 0)
           .fromTo(ticket,
-            { autoAlpha: 0, y: vh * 0.18 },
+            { autoAlpha: 0, y: () => layout.vh * 0.18 },
             { autoAlpha: 1, y: 0, duration: 0.24, ease: 'power3.out', immediateRender: false },
             0
           )
@@ -447,8 +470,8 @@ function DesktopApp() {
         // card's transform. Clear that transform completely so the size tween
         // starts from the CSS dimensions instead of a cached GSAP scale.
         gsap.set(selectedCard, {
-          width: 320,
-          height: 320,
+          width: layout.cardStartSize,
+          height: layout.cardStartSize,
           borderRadius: 20,
           clearProps: 'transform',
         })
@@ -695,6 +718,44 @@ function DesktopApp() {
         restartToStart,
       }
 
+      const refreshLayout = () => {
+        measureLayout()
+
+        const timelines = [tl1to2, ...ticketStepTls]
+        timelines.forEach((timeline) => {
+          const progress = timeline.progress()
+          timeline.invalidate().progress(progress)
+        })
+
+        if (stateRef.current.phase === 'grid') {
+          renderHorizontalGrid(horizontalState.currentProgress)
+        }
+
+        draggableInstancesRef.current.forEach((instances) => {
+          const draggable = instances[0]
+          draggable?.applyBounds(scatterRef.current)
+          draggable?.update()
+        })
+      }
+
+      scheduleLayoutRefresh = () => {
+        if (resizeFrame != null) cancelAnimationFrame(resizeFrame)
+        resizeFrame = requestAnimationFrame(() => {
+          resizeFrame = null
+          refreshLayout()
+        })
+        if (resizeEndTimer != null) clearTimeout(resizeEndTimer)
+        resizeEndTimer = setTimeout(() => {
+          resizeEndTimer = null
+          ScrollTrigger.refresh()
+        }, 120)
+      }
+
+      resizeObserver = new ResizeObserver(scheduleLayoutRefresh)
+      resizeObserver.observe(stage)
+      window.addEventListener('resize', scheduleLayoutRefresh, { passive: true })
+      window.visualViewport?.addEventListener('resize', scheduleLayoutRefresh, { passive: true })
+
       /* ===== ScrollTrigger: pin only ===== */
       stInstance = ScrollTrigger.create({
         trigger: appRef.current,
@@ -751,7 +812,7 @@ function DesktopApp() {
           setReady()
           scrollBaseRef.current = window.scrollY
           gsap.to(grid, {
-            x: stepGridTargetX,
+            x: layout.stepGridTargetX,
             duration: 0.2,
             ease: 'power2.out',
             onComplete() {
@@ -782,6 +843,13 @@ function DesktopApp() {
 
     return () => {
       if (handleWheel) window.removeEventListener('wheel', handleWheel)
+      resizeObserver?.disconnect()
+      if (scheduleLayoutRefresh) {
+        window.removeEventListener('resize', scheduleLayoutRefresh)
+        window.visualViewport?.removeEventListener('resize', scheduleLayoutRefresh)
+      }
+      if (resizeFrame != null) cancelAnimationFrame(resizeFrame)
+      if (resizeEndTimer != null) clearTimeout(resizeEndTimer)
       if (ticker) gsap.ticker.remove(ticker)
       if (stInstance) stInstance.kill()
       draggableInstancesRef.current.forEach(d => d[0]?.kill())
@@ -864,13 +932,18 @@ function DesktopApp() {
   }, [cardInteraction, isAnimating, phase])
 
   const handleArticleBack = () => {
-    articleTransitionApiRef.current?.close()
+    if (isArticleClosing) return
+    const closeArticle = articleTransitionApiRef.current?.close
+    if (!closeArticle) return
+    setIsArticleClosing(true)
+    closeArticle()
   }
 
   const finishArticleClose = useCallback(() => {
     setArticleIndex(null)
     setArticleProgress(0)
     setArticleTransition(null)
+    setIsArticleClosing(false)
   }, [])
 
   return (
@@ -957,7 +1030,7 @@ function DesktopApp() {
             >
               <Ticket
                 data={ticket}
-                article={articles[i]}
+                article={articlesByTicketId[ticket.id]}
                 cardInteractionProps={cardInteractionProps}
                 onRead={event => handleArticleOpen(i, event)}
               />
@@ -994,6 +1067,7 @@ function DesktopApp() {
           ticketIndex={ticketIndex}
           visualTicketIndex={visualTicketIndex}
           isAnimating={isAnimating}
+          isArticleClosing={isArticleClosing}
           onAdvance={handleAdvance}
           onBack={handleBack}
           onTicketSelect={handleTicketSelect}

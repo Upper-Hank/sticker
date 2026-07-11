@@ -1,6 +1,7 @@
 import Card from '../Card/Card'
 import Graphic from '../Graphic/Graphic'
 import Logo from '../Graphic/Graphic'
+import ArticleContent from '../../articles/ArticleContent'
 import './Ticket.css'
 
 function Ticket({ data, article, cardInteractionProps, onRead }) {
@@ -39,24 +40,7 @@ function Ticket({ data, article, cardInteractionProps, onRead }) {
               )}
             </div>
           </div>
-          {article && (
-            <div className="ticket-article">
-              <div className="ticket-article-hero">
-                <span>{article.stage}</span>
-                <h1>{article.title}</h1>
-                <p>{article.summary}</p>
-              </div>
-              <div className="ticket-article-sections">
-                {article.sections.map(section => (
-                  <section key={section.heading}>
-                    <h2>{section.heading}</h2>
-                    <p>{section.body}</p>
-                  </section>
-                ))}
-                <blockquote>{article.question}</blockquote>
-              </div>
-            </div>
-          )}
+          {article && <ArticleContent article={article} />}
         </div>
       </div>
     </article>

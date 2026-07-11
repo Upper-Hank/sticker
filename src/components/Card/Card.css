@@ -10,9 +10,14 @@
   flex-shrink: 0;
 }
 
+.grid .card {
+  width: var(--grid-card-size, 320px);
+  height: var(--grid-card-size, 320px);
+}
+
 .card--large {
-  width: 480px;
-  height: 480px;
+  width: var(--ticket-card-size, 480px);
+  height: var(--ticket-card-size, 480px);
   border-radius: 24px;
 }
 

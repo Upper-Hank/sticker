@@ -1,0 +1,18 @@
+.trace-story > .article-stage { margin-bottom: 28px; }
+.trace-opening { max-width: 790px; margin: 0 0 120px; font: 400 42px/1.2 "IBM Plex Serif", serif; }
+.trace-ledger { display: grid; gap: 60px; grid-template-columns: 1fr 1fr; }
+.trace-ledger section { border-top: 1px solid rgba(49,49,49,.3); }
+.trace-ledger span, .trace-coda > span { display: block; padding: 20px 0 38px; font: 11px "IBM Plex Sans", sans-serif; letter-spacing: .1em; text-transform: uppercase; }
+.trace-ledger p { margin: 0; padding: 15px 0; border-bottom: 1px solid rgba(49,49,49,.18); font: 18px/1.45 "IBM Plex Sans", sans-serif; }
+.trace-reflection { max-width: 700px; margin: 140px 0 140px auto; font: 23px/1.6 "IBM Plex Sans", sans-serif; }
+.trace-coda { max-width: 640px; }
+.trace-coda p { margin: 0; padding: 14px 0; border-bottom: 1px solid rgba(49,49,49,.22); font: 400 34px "IBM Plex Serif", serif; }
+.trace-final { margin: 160px 0 20px; padding: 0; border: 0; font: 400 clamp(48px,6vw,78px)/1.04 "IBM Plex Serif", serif; }
+
+@media (max-width: 767px) {
+  .trace-opening { margin-bottom: 80px; font-size: 32px; }
+  .trace-ledger { gap: 70px; grid-template-columns: 1fr; }
+  .trace-reflection { margin: 100px 0; font-size: 19px; }
+  .trace-coda p { font-size: 28px; }
+  .trace-final { margin-top: 110px; font-size: 45px; }
+}

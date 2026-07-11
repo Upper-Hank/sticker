@@ -3,8 +3,10 @@ import gsap from 'gsap'
 import { Draggable } from 'gsap/Draggable'
 import { InertiaPlugin } from 'gsap/InertiaPlugin'
 import Graphic from '../Graphic/Graphic'
+import ArticleContent from '../../articles/ArticleContent'
+import caretLeft from '../../assets/caret-left.svg'
 import tickets from '../../data/tickets.json'
-import articles from '../../data/articles'
+import articlesByTicketId from '../../articles/registry'
 import { getPathLength } from '../../utils/pathCache'
 import { createCardInteraction } from '../../animations/cardInteraction'
 import './MobileView.css'
@@ -49,6 +51,7 @@ function MobileView() {
   const [isTicketClosing, setIsTicketClosing] = useState(false)
   const [articleIndex, setArticleIndex] = useState(null)
   const [articleProgress, setArticleProgress] = useState(0)
+  const [articleControlState, setArticleControlState] = useState('hidden')
   const swipeStartRef = useRef(null)
   const sheetRef = useRef(null)
   const backdropRef = useRef(null)
@@ -114,6 +117,7 @@ function MobileView() {
     if (index == null) return
     window.history.pushState({ ...window.history.state, mobileLayer: 'article', ticketIndex: index }, '')
     setArticleProgress(0)
+    setArticleControlState('hidden')
     articleIndexRef.current = index
     setArticleIndex(index)
   }
@@ -122,6 +126,7 @@ function MobileView() {
     articleIndexRef.current = null
     setArticleIndex(null)
     setArticleProgress(0)
+    setArticleControlState('hidden')
   }, [])
 
   useEffect(() => {
@@ -175,7 +180,10 @@ function MobileView() {
     const startLogoRect = logo.getBoundingClientRect()
     let liftTimeline = null
     let articleTimeline = null
+    let controlRevealCall = null
+    let controlEnableCall = null
     let expandedHeight = 0
+    let resizeFrame = null
 
     sheet.classList.add('mobile-ticket-sheet--prelude')
     const endLogoRect = logo.getBoundingClientRect()
@@ -191,6 +199,23 @@ function MobileView() {
       setArticleProgress(maxScroll > 0 ? sheet.scrollTop / maxScroll : 1)
     }
 
+    const refreshArticleLayout = () => {
+      if (!sheet.classList.contains('mobile-ticket-sheet--article')) return
+      gsap.set(sheet, { height: viewRef.current?.clientHeight || window.innerHeight })
+      updateArticleProgress()
+    }
+
+    const handleResize = () => {
+      if (resizeFrame != null) cancelAnimationFrame(resizeFrame)
+      resizeFrame = requestAnimationFrame(() => {
+        resizeFrame = null
+        refreshArticleLayout()
+      })
+    }
+
+    window.addEventListener('resize', handleResize, { passive: true })
+    window.visualViewport?.addEventListener('resize', handleResize, { passive: true })
+
     const buildArticle = () => {
       const startRects = new Map(headingItems.map(element => [element, element.getBoundingClientRect()]))
       gsap.set(visual, { autoAlpha: 0 })
@@ -198,7 +223,7 @@ function MobileView() {
       gsap.set(heading, { marginTop: 0 })
       const endStyle = getComputedStyle(sheet)
       gsap.set(sheet, {
-        height: window.innerHeight,
+        height: viewRef.current?.clientHeight || window.innerHeight,
         paddingTop: parseFloat(endStyle.paddingTop),
         paddingRight: parseFloat(endStyle.paddingRight),
         paddingBottom: parseFloat(endStyle.paddingBottom),
@@ -255,6 +280,12 @@ function MobileView() {
         }, reduceMotion ? 0 : 0.2)
 
       articleTimeline.play(0)
+      controlRevealCall = gsap.delayedCall(reduceMotion ? 0 : 0.2, () => {
+        setArticleControlState('revealing')
+        controlEnableCall = gsap.delayedCall(reduceMotion ? 0 : 0.48, () => {
+          setArticleControlState('visible')
+        })
+      })
     }
 
     const buildLift = () => {
@@ -323,6 +354,9 @@ function MobileView() {
 
     articleTransitionApiRef.current = {
       close: () => {
+        controlRevealCall?.kill()
+        controlEnableCall?.kill()
+        setArticleControlState('closing')
         if (articleTimeline) {
           if (articleTimeline.reversed()) return
           sheet.removeEventListener('scroll', updateArticleProgress)
@@ -344,7 +378,12 @@ function MobileView() {
 
     return () => {
       sheet.removeEventListener('scroll', updateArticleProgress)
+      window.removeEventListener('resize', handleResize)
+      window.visualViewport?.removeEventListener('resize', handleResize)
+      if (resizeFrame != null) cancelAnimationFrame(resizeFrame)
       articleTimeline?.kill()
+      controlRevealCall?.kill()
+      controlEnableCall?.kill()
       liftTimeline?.kill()
       preludeTimeline.kill()
       articleTransitionApiRef.current = null
@@ -373,8 +412,10 @@ function MobileView() {
 
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     let resizeObserver
+    let resizeFrame = null
     let dragZIndex = 10
     let isEntranceComplete = false
+    let resizePending = false
 
     const getElements = () => Array.from(wrapper.querySelectorAll('.mobile-graphic'))
     const getSlots = () => Array.from(view.querySelectorAll('.mobile-slot'))
@@ -395,7 +436,10 @@ function MobileView() {
           gsap.set(element, vars)
         }
       })
-      draggableInstancesRef.current.forEach(instance => instance.applyBounds(view))
+      draggableInstancesRef.current.forEach((instance) => {
+        instance.applyBounds(view)
+        instance.update()
+      })
     }
 
     const checkSlot = (element, index) => {
@@ -527,6 +571,7 @@ function MobileView() {
         duration: reduceMotion ? 0 : 0.5,
         ease: 'power3.inOut',
       }, reduceMotion ? 0 : 0.62)
+      timeline.set(logo, { clearProps: 'left,top,width,height' }, reduceMotion ? 0 : 1.12)
       timeline.call(() => layoutGraphics(false), null, reduceMotion ? 0 : 0.8)
       timeline.to(getElements(), {
         autoAlpha: 1,
@@ -538,28 +583,45 @@ function MobileView() {
           isEntranceComplete = true
           layoutGraphics(false, true)
           setupDraggable()
+          if (resizePending) {
+            resizePending = false
+            layoutGraphics(false, true)
+          }
         },
       }, reduceMotion ? 0 : 0.82)
     }, view)
 
     let previousWidth = view.clientWidth
     let previousHeight = view.clientHeight
-    resizeObserver = new ResizeObserver(() => {
-      if (!isEntranceComplete) return
+    const refreshLayout = () => {
+      if (!isEntranceComplete) {
+        resizePending = true
+        return
+      }
       if (Math.abs(view.clientWidth - previousWidth) < 2 && Math.abs(view.clientHeight - previousHeight) < 2) return
       previousWidth = view.clientWidth
       previousHeight = view.clientHeight
       layoutGraphics(false, true)
-      setupDraggable()
-      gsap.set(logoRef.current, {
-        left: (view.clientWidth - LOGO_SIZE) / 2,
-        top: view.clientHeight - 48 - LOGO_SIZE,
+    }
+
+    const scheduleLayout = () => {
+      if (resizeFrame != null) cancelAnimationFrame(resizeFrame)
+      resizeFrame = requestAnimationFrame(() => {
+        resizeFrame = null
+        refreshLayout()
       })
-    })
+    }
+
+    resizeObserver = new ResizeObserver(scheduleLayout)
     resizeObserver.observe(view)
+    window.addEventListener('resize', scheduleLayout, { passive: true })
+    window.visualViewport?.addEventListener('resize', scheduleLayout, { passive: true })
 
     return () => {
       resizeObserver?.disconnect()
+      window.removeEventListener('resize', scheduleLayout)
+      window.visualViewport?.removeEventListener('resize', scheduleLayout)
+      if (resizeFrame != null) cancelAnimationFrame(resizeFrame)
       draggableInstancesRef.current.forEach(instance => instance.kill())
       draggableInstancesRef.current = []
       cardInteraction.destroy()
@@ -681,45 +743,31 @@ function MobileView() {
               </button>
             </div>
             {articleIndex != null && (
-              <div className="mobile-ticket-article">
-                <div className="mobile-article-hero">
-                  <span>{articles[articleIndex].stage}</span>
-                  <h1>{articles[articleIndex].title}</h1>
-                  <p>{articles[articleIndex].summary}</p>
-                </div>
-                <div className="mobile-article-sections">
-                  {articles[articleIndex].sections.map(section => (
-                    <section key={section.heading}>
-                      <h2>{section.heading}</h2>
-                      <p>{section.body}</p>
-                    </section>
-                  ))}
-                  <blockquote>{articles[articleIndex].question}</blockquote>
-                </div>
-              </div>
+              <ArticleContent article={articlesByTicketId[tickets[articleIndex].id]} variant="mobile" />
             )}
           </article>
         </div>
       )}
 
       {articleIndex != null && (
-        <div className={`mobile-article-controller${articleProgress >= 0.995 ? ' mobile-article-controller--ready' : ''}`}>
+        <div className={`mobile-article-controller mobile-article-controller--${articleControlState}${articleProgress >= 0.995 ? ' mobile-article-controller--ready' : ''}${articleControlState !== 'visible' ? ' mobile-article-controller--disabled' : ''}`}>
           <div className="mobile-article-control-shell">
-            <div
-              className="mobile-article-control-progress"
-              style={{ transform: `scaleX(${Math.max(0, Math.min(1, articleProgress))})` }}
-            />
-            <button
-              className="mobile-article-control-button"
-              type="button"
-              onClick={() => window.history.back()}
-              disabled={articleProgress < 0.995}
-              aria-label="Back to ticket"
-            >
-              <svg viewBox="0 0 20 20" fill="none" aria-hidden="true">
-                <path d="M13 4L6 10L13 16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </button>
+            <div className="mobile-article-control-bg" />
+            <div className="mobile-article-control-content">
+              <div
+                className="mobile-article-control-progress"
+                style={{ transform: `scaleX(${Math.max(0, Math.min(1, articleProgress))})` }}
+              />
+              <button
+                className="mobile-article-control-button"
+                type="button"
+                onClick={() => window.history.back()}
+                disabled={articleProgress < 0.995 || articleControlState !== 'visible'}
+                aria-label="Back to ticket"
+              >
+                <img className="mobile-article-control-arrow" src={caretLeft} alt="" aria-hidden="true" />
+              </button>
+            </div>
           </div>
         </div>
       )}

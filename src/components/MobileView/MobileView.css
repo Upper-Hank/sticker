@@ -1,7 +1,7 @@
 .mobile-view {
   position: fixed;
   inset: 0;
-  min-height: 100svh;
+  min-height: 100dvh;
   overflow: hidden;
   background: #e2dfd0;
   color: #535353;
@@ -16,8 +16,11 @@
 .mobile-logo {
   position: absolute;
   z-index: 4;
+  bottom: max(48px, calc(env(safe-area-inset-bottom) + 32px));
+  left: calc(50% - 15px);
+  width: 30px;
+  height: 30px;
   visibility: hidden;
-  will-change: left, top, width, height;
 }
 
 .mobile-logo .graphic {
@@ -284,28 +287,102 @@
   left: 50%;
   height: 48px;
   width: 240px;
-  transform: translateX(-50%);
+  opacity: 0;
+  transform: translate(-50%, 64px);
+  transition:
+    opacity 0.18s ease,
+    transform 0.48s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .mobile-article-control-shell {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 240px;
-  height: 4px;
+  width: 8px;
+  height: 8px;
   overflow: hidden;
-  border: 0 solid rgba(83, 83, 83, 0.25);
-  border-radius: 2px;
-  background: rgba(83, 83, 83, 0.15);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border-radius: 4px;
   box-sizing: border-box;
   transform: translate(-50%, -50%);
   transition:
     width 0.3s cubic-bezier(0.22, 1, 0.36, 1),
     height 0.3s cubic-bezier(0.22, 1, 0.36, 1),
-    border-radius 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+    border-radius 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.mobile-article-control-bg {
+  position: absolute;
+  inset: 0;
+  border: 0 solid transparent;
+  border-radius: inherit;
+  background: #535353;
+  box-shadow: none;
+  box-sizing: border-box;
+  transition:
     border-width 0.3s ease,
-    background-color 0.3s ease;
+    border-color 0.3s ease,
+    background-color 0.3s ease,
+    box-shadow 0.3s ease,
+    opacity 0.18s ease,
+    filter 0.18s ease;
+}
+
+.mobile-article-control-content {
+  position: absolute;
+  inset: 0;
+  transition: opacity 0.18s ease;
+}
+
+.mobile-article-controller--disabled .mobile-article-control-bg {
+  opacity: 0.72;
+  filter: saturate(0.75);
+}
+
+.mobile-article-controller--disabled .mobile-article-control-content {
+  opacity: 0.4;
+}
+
+.mobile-article-controller--revealing,
+.mobile-article-controller--visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.mobile-article-controller--revealing .mobile-article-control-shell,
+.mobile-article-controller--visible .mobile-article-control-shell {
+  width: 240px;
+  height: 4px;
+  border-radius: 2px;
+}
+
+.mobile-article-controller--revealing .mobile-article-control-bg,
+.mobile-article-controller--visible .mobile-article-control-bg {
+  background: rgba(83, 83, 83, 0.15);
+}
+
+.mobile-article-controller--closing {
+  opacity: 0;
+  transform: translate(-50%, 64px);
+  transition-delay: 0.28s, 0.22s;
+}
+
+.mobile-article-controller--closing .mobile-article-control-shell {
+  width: 8px;
+  height: 8px;
+  border-radius: 4px;
+}
+
+.mobile-article-controller--closing .mobile-article-control-bg {
+  border-width: 0;
+  border-color: transparent;
+  background: #535353;
+  box-shadow: none;
+}
+
+.mobile-article-controller--closing .mobile-article-control-progress,
+.mobile-article-controller--closing .mobile-article-control-button {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .mobile-article-control-progress {
@@ -334,24 +411,30 @@
   transition: opacity 0.2s ease, transform 0.24s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-.mobile-article-control-button svg {
+.mobile-article-control-arrow {
+  display: block;
   width: 18px;
   height: 18px;
 }
 
-.mobile-article-controller--ready .mobile-article-control-shell {
+.mobile-article-controller--visible.mobile-article-controller--ready .mobile-article-control-shell {
   width: 44px;
   height: 44px;
-  border-width: 1.5px;
   border-radius: 22px;
-  background: rgba(239, 239, 231, 0.95);
 }
 
-.mobile-article-controller--ready .mobile-article-control-progress {
+.mobile-article-controller--visible.mobile-article-controller--ready .mobile-article-control-bg {
+  border-width: 1.5px;
+  border-color: rgba(83, 83, 83, 0.25);
+  background: rgba(239, 239, 231, 0.95);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.mobile-article-controller--visible.mobile-article-controller--ready .mobile-article-control-progress {
   opacity: 0;
 }
 
-.mobile-article-controller--ready .mobile-article-control-button {
+.mobile-article-controller--visible.mobile-article-controller--ready .mobile-article-control-button {
   opacity: 1;
   pointer-events: auto;
   transform: scale(1);
@@ -368,46 +451,34 @@
   pointer-events: none;
 }
 
-.mobile-article-hero > span {
-  font: 12px "IBM Plex Sans", sans-serif;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
 .mobile-article-hero h1 {
-  margin: 38px 0 26px;
+  margin: 0;
   font: 400 clamp(48px, 14vw, 68px)/0.96 "IBM Plex Serif", serif;
   letter-spacing: -0.04em;
 }
 
-.mobile-article-hero > p {
-  margin: 0;
-  font: 18px/1.45 "IBM Plex Sans", sans-serif;
+.mobile-article-body {
+  margin-top: 64px;
 }
 
-.mobile-article-sections {
-  margin-top: 92px;
+.mobile-article-body > .article-stage {
+  margin-bottom: 24px;
 }
 
-.mobile-article-sections section {
+.mobile-article-body > .article-lead {
+  margin: 0 0 92px;
+}
+
+.mobile-article-body > .article-section {
   margin-bottom: 64px;
 }
 
-.mobile-article-sections h2 {
-  margin: 0 0 20px;
-  font: 400 28px/1.15 "IBM Plex Serif", serif;
+.mobile-article-body > .article-section h2 {
+  margin-bottom: 20px;
 }
 
-.mobile-article-sections p {
-  margin: 0;
-  font: 17px/1.6 "IBM Plex Sans", sans-serif;
-}
-
-.mobile-article-sections blockquote {
+.mobile-article-body > .article-quote {
   margin: 92px 0 30px;
-  padding: 0;
-  border: 0;
-  font: 400 42px/1.08 "IBM Plex Serif", serif;
 }
 
 @keyframes mobile-fade-in {
@@ -423,6 +494,43 @@
   .mobile-ticket-visual { height: 132px; }
   .mobile-ticket-heading h2,
   .mobile-ticket-letter { font-size: 36px; }
+}
+
+@media (max-width: 360px) {
+  .mobile-ticket-sheet {
+    padding-right: 16px;
+    padding-left: 16px;
+  }
+
+  .mobile-ticket-heading h2,
+  .mobile-ticket-letter {
+    font-size: 40px;
+  }
+}
+
+@media (max-height: 500px) and (pointer: coarse) {
+  .mobile-puzzle {
+    right: 12px;
+    bottom: 24px;
+    left: auto;
+  }
+
+  .mobile-ticket-backdrop {
+    align-items: stretch;
+  }
+
+  .mobile-ticket-sheet {
+    margin-left: 32%;
+    border-radius: 24px 0 0 24px;
+  }
+
+  .mobile-ticket-sheet--article {
+    margin-left: 0;
+  }
+
+  .mobile-ticket-visual {
+    height: 104px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

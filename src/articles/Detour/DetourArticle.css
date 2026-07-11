@@ -1,0 +1,24 @@
+.detour-story > .article-stage { margin-bottom: 28px; }
+.detour-story > .article-lead { max-width: 720px; margin: 0 0 110px; }
+.detour-comparison { display: grid; gap: 18px; grid-template-columns: 1fr 1fr; }
+.detour-comparison section { min-height: 380px; padding: 34px; border: 1px solid rgba(49,49,49,.25); border-radius: 24px; box-sizing: border-box; }
+.detour-comparison section:last-child { background: #313131; color: #efefe7; }
+.detour-comparison section > span, .detour-principle span { font: 11px "IBM Plex Sans", sans-serif; letter-spacing: .1em; text-transform: uppercase; }
+.detour-comparison h2 { margin: 70px 0 24px; font: 400 42px "IBM Plex Serif", serif; }
+.detour-comparison p { margin: 0; font: 17px/1.55 "IBM Plex Sans", sans-serif; }
+.detour-comparison ul { display: flex; margin: 50px 0 0; padding: 0; gap: 8px; list-style: none; flex-wrap: wrap; }
+.detour-comparison li { padding: 7px 11px; border: 1px solid currentColor; border-radius: 999px; font: 11px "IBM Plex Sans", sans-serif; text-transform: uppercase; }
+.detour-cut { display: grid; margin: 130px 0; align-items: baseline; row-gap: 20px; grid-template-columns: 1fr 90px 1fr; }
+.detour-cut p { margin: 0; font: 400 25px "IBM Plex Serif", serif; }
+.detour-cut span { font: italic 14px "IBM Plex Serif", serif; text-align: center; }
+.detour-principle { padding-top: 28px; border-top: 1px solid rgba(49,49,49,.3); }
+.detour-principle p { max-width: 760px; margin: 36px 0 20px; font: 400 clamp(44px,5vw,68px)/1.08 "IBM Plex Serif", serif; }
+
+@media (max-width: 767px) {
+  .detour-comparison { grid-template-columns: 1fr; }
+  .detour-comparison section { min-height: 340px; padding: 28px; }
+  .detour-cut { margin: 90px 0; gap: 10px; grid-template-columns: 1fr; }
+  .detour-cut span { margin: 5px 0; text-align: left; }
+  .detour-cut p:nth-of-type(even) { margin-bottom: 24px; padding-left: 28px; }
+  .detour-principle p { font-size: 42px; }
+}

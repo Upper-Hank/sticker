@@ -29,6 +29,7 @@ function AnimationController({
   ticketIndex,
   visualTicketIndex,
   isAnimating,
+  isArticleClosing = false,
   onAdvance,
   onBack,
   onTicketSelect,
@@ -65,7 +66,7 @@ function AnimationController({
   const prevModeRef = useRef(null)
   const activeTlRef = useRef(null)
   const [isTransitioning, setIsTransitioning] = useState(false)
-  const isControlDisabled = isAnimating || isTransitioning
+  const isControlDisabled = isAnimating || isTransitioning || isArticleClosing
 
   /* ---- helpers ---- */
   const getAllDots = useCallback(() => {

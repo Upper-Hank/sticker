@@ -1,0 +1,22 @@
+.valley-opening { max-width: 700px; }
+.valley-opening .article-stage { margin-bottom: 28px; }
+.valley-opening .article-lead { margin: 0; }
+.valley-dropcap { margin: 120px 0; font: 400 34px/1.35 "IBM Plex Serif", serif; }
+.valley-dropcap::first-letter { float: left; margin: -9px 12px 0 0; font-size: 96px; line-height: 1; }
+.valley-notes { display: grid; margin: 0 0 130px; border-top: 1px solid rgba(49,49,49,.25); }
+.valley-notes p { display: grid; margin: 0; padding: 22px 0; border-bottom: 1px solid rgba(49,49,49,.25); font: 18px/1.5 "IBM Plex Sans", sans-serif; grid-template-columns: 120px 1fr; }
+.valley-notes span { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; }
+.valley-passage { display: grid; gap: 36px; grid-template-columns: 240px 1fr; }
+.valley-passage h2 { margin: 0; font: 400 30px/1.15 "IBM Plex Serif", serif; }
+.valley-passage p { margin: 0 0 24px; font: 20px/1.65 "IBM Plex Sans", sans-serif; }
+.valley-ending { margin: 150px 0 20px; font: 400 clamp(46px,6vw,76px)/1.04 "IBM Plex Serif", serif; }
+
+@media (max-width: 767px) {
+  .valley-dropcap { margin: 80px 0; font-size: 27px; }
+  .valley-dropcap::first-letter { font-size: 74px; }
+  .valley-notes { margin-bottom: 90px; }
+  .valley-notes p { gap: 12px; grid-template-columns: 1fr; }
+  .valley-passage { grid-template-columns: 1fr; }
+  .valley-passage p { font-size: 17px; }
+  .valley-ending { margin-top: 100px; font-size: 44px; }
+}

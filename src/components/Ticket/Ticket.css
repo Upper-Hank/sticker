@@ -1,20 +1,24 @@
 .ticket {
   position: relative;
-  width: 1280px;
-  height: 520px;
+  width: var(--ticket-width, 1280px);
+  height: var(--ticket-height, 520px);
+  border-radius: 32px;
 }
 
 .ticket-front {
   position: absolute;
-  inset: 0;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   border-radius: 32px;
   display: flex;
 }
 
 .ticket-left {
   display: flex;
-  width: 520px;
-  height: 520px;
+  width: var(--ticket-left-size, 520px);
+  height: var(--ticket-height, 520px);
   padding: 20px;
   justify-content: center;
   align-items: center;
@@ -27,8 +31,9 @@
 .ticket-right {
   position: relative;
   display: flex;
-  width: 760px;
-  padding: 30px 34px 30px 40px;
+  width: calc(var(--ticket-width, 1280px) - var(--ticket-left-size, 520px));
+  height: var(--ticket-height, 520px);
+  padding: clamp(22px, 3vh, 30px) clamp(24px, 2.7vw, 34px) clamp(22px, 3vh, 30px) clamp(28px, 3.2vw, 40px);
   flex-direction: column;
   justify-content: space-between;
   align-items: flex-start;
@@ -67,20 +72,20 @@
 .ticket-title {
   color: #535353;
   font-family: "IBM Plex Serif", serif;
-  font-size: 120px;
+  font-size: clamp(72px, 8vw, 120px);
   font-style: normal;
   font-weight: 400;
-  line-height: 120px;
+  line-height: 1;
   text-transform: capitalize;
 }
 
 .ticket-letter {
   color: #535353;
   font-family: "IBM Plex Sans", sans-serif;
-  font-size: 120px;
+  font-size: clamp(72px, 8vw, 120px);
   font-style: normal;
   font-weight: 700;
-  line-height: 120px;
+  line-height: 1;
 }
 
 .ticket-content {
@@ -100,10 +105,10 @@
 .ticket-intro-line {
   color: #313131;
   font-family: "IBM Plex Sans", sans-serif;
-  font-size: 30px;
+  font-size: clamp(20px, 2vw, 30px);
   font-style: normal;
   font-weight: 400;
-  line-height: 30px;
+  line-height: 1;
 }
 
 .ticket-logo {
@@ -220,17 +225,7 @@
 }
 
 .ticket-article-hero {
-  display: grid;
-  align-items: start;
-  gap: 34px;
-  grid-template-columns: 190px 1fr;
-}
-
-.ticket-article-hero > span {
-  padding-top: 12px;
-  font: 13px "IBM Plex Sans", sans-serif;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  max-width: 1050px;
 }
 
 .ticket-article-hero h1 {
@@ -240,36 +235,27 @@
   letter-spacing: -0.04em;
 }
 
-.ticket-article-hero p {
-  max-width: 680px;
-  margin: 18px 0 0 190px;
-  grid-column: 1 / -1;
-  font: 24px/1.4 "IBM Plex Sans", sans-serif;
-}
-
-.ticket-article-sections {
+.ticket-article-body {
   max-width: 860px;
-  margin: 140px auto 0;
+  margin: 80px auto 0;
 }
 
-.ticket-article-sections section {
+.ticket-article-body > .article-stage {
+  margin-bottom: 28px;
+}
+
+.ticket-article-body > .article-lead {
+  max-width: 680px;
+  margin: 0 0 140px;
+}
+
+.ticket-article-body > .article-section {
   display: grid;
   margin-bottom: 100px;
   gap: 36px;
   grid-template-columns: 240px 1fr;
 }
 
-.ticket-article-sections h2 {
-  margin: 0;
-  font: 400 30px/1.15 "IBM Plex Serif", serif;
-}
-
-.ticket-article-sections p {
-  margin: 0;
-  font: 20px/1.65 "IBM Plex Sans", sans-serif;
-}
-
-.ticket-article-sections blockquote {
+.ticket-article-body > .article-quote {
   margin: 150px 0 20px;
-  font: 400 clamp(42px, 5vw, 68px)/1.08 "IBM Plex Serif", serif;
 }

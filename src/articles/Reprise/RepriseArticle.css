@@ -1,0 +1,26 @@
+.reprise-status { display: flex; margin-bottom: 28px; align-items: center; justify-content: space-between; }
+.reprise-badge { padding: 7px 12px; border: 1px solid rgba(49,49,49,.35); border-radius: 999px; font: 11px "IBM Plex Sans", sans-serif; letter-spacing: .08em; text-transform: uppercase; }
+.reprise-story > .article-lead { max-width: 680px; margin: 0 0 110px; }
+.reprise-incident { display: grid; border-top: 1px solid rgba(49,49,49,.3); }
+.reprise-incident > div { display: grid; padding: 26px 0; border-bottom: 1px solid rgba(49,49,49,.3); gap: 30px; grid-template-columns: 120px 1fr; }
+.reprise-incident span, .reprise-test > span { font: 11px "IBM Plex Sans", sans-serif; letter-spacing: .1em; text-transform: uppercase; }
+.reprise-incident p { margin: 0; font: 19px/1.5 "IBM Plex Sans", sans-serif; }
+.reprise-change { display: grid; margin: 130px 0; gap: 50px; grid-template-columns: 220px 1fr; }
+.reprise-change h2 { margin: 0; font: 400 34px/1.1 "IBM Plex Serif", serif; }
+.reprise-layers { display: grid; gap: 12px; }
+.reprise-layers p { display: flex; margin: 0; padding: 20px; background: rgba(49,49,49,.06); border-radius: 16px; justify-content: space-between; font: 16px "IBM Plex Sans", sans-serif; }
+.reprise-layers b { font-weight: 500; }
+.reprise-layers span { color: rgba(49,49,49,.65); }
+.reprise-test { padding: 34px; background: #313131; border-radius: 24px; color: #efefe7; }
+.reprise-test p { margin: 24px 0 0; font: 20px/1.6 "IBM Plex Sans", sans-serif; }
+.reprise-ending { margin: 140px 0 20px; font: 400 clamp(44px,5vw,68px)/1.08 "IBM Plex Serif", serif; }
+
+@media (max-width: 767px) {
+  .reprise-incident > div { gap: 12px; grid-template-columns: 1fr; }
+  .reprise-incident p { font-size: 17px; }
+  .reprise-change { margin: 90px 0; grid-template-columns: 1fr; }
+  .reprise-layers p { gap: 7px; align-items: flex-start; flex-direction: column; }
+  .reprise-test { padding: 26px; }
+  .reprise-test p { font-size: 17px; }
+  .reprise-ending { margin-top: 100px; font-size: 42px; }
+}

@@ -1,0 +1,34 @@
+.article-stage {
+  display: block;
+  font: 13px "IBM Plex Sans", sans-serif;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.article-lead {
+  font: 24px/1.4 "IBM Plex Sans", sans-serif;
+}
+
+.article-section h2 {
+  margin: 0;
+  font: 400 30px/1.15 "IBM Plex Serif", serif;
+}
+
+.article-section p {
+  margin: 0;
+  font: 20px/1.65 "IBM Plex Sans", sans-serif;
+}
+
+.article-quote {
+  padding: 0;
+  border: 0;
+  font: 400 clamp(42px, 5vw, 68px)/1.08 "IBM Plex Serif", serif;
+}
+
+@media (max-width: 767px) {
+  .article-stage { font-size: 12px; }
+  .article-lead { font-size: 18px; line-height: 1.45; }
+  .article-section h2 { font-size: 28px; }
+  .article-section p { font-size: 17px; line-height: 1.6; }
+  .article-quote { font-size: 42px; }
+}

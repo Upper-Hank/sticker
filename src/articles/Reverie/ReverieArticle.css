@@ -1,0 +1,22 @@
+.reverie-story > .article-stage { margin-bottom: 28px; }
+.reverie-statement { max-width: 760px; margin: 0 0 110px; font: 400 38px/1.25 "IBM Plex Serif", serif; }
+.reverie-characters { border-top: 1px solid rgba(49,49,49,.25); }
+.reverie-character { display: grid; padding: 22px 0; align-items: center; border-bottom: 1px solid rgba(49,49,49,.25); grid-template-columns: 50px 72px 180px 1fr; }
+.reverie-index { font: 11px "IBM Plex Sans", sans-serif; }
+.reverie-swatch { display: grid; width: 52px; height: 52px; place-items: center; border-radius: 14px; font: 700 24px "IBM Plex Sans", sans-serif; }
+.reverie-character h2 { margin: 0; font: 400 28px "IBM Plex Serif", serif; }
+.reverie-character p { margin: 0; font: 17px/1.4 "IBM Plex Sans", sans-serif; }
+.reverie-equation { display: grid; margin: 130px 0; row-gap: 14px; grid-template-columns: 140px 1fr; font: 20px/1.4 "IBM Plex Sans", sans-serif; }
+.reverie-equation span { font-size: 12px; letter-spacing: .1em; text-transform: uppercase; }
+.reverie-equation b { font-weight: 400; }
+.reverie-quote { margin: 0; padding: 0; border: 0; font: 400 clamp(44px,5vw,68px)/1.08 "IBM Plex Serif", serif; }
+
+@media (max-width: 767px) {
+  .reverie-statement { margin-bottom: 72px; font-size: 29px; }
+  .reverie-character { gap: 14px; grid-template-columns: 52px 1fr; }
+  .reverie-index { display: none; }
+  .reverie-character h2 { font-size: 25px; }
+  .reverie-character p { grid-column: 2; font-size: 15px; }
+  .reverie-equation { margin: 90px 0; grid-template-columns: 100px 1fr; font-size: 17px; }
+  .reverie-quote { font-size: 42px; }
+}
