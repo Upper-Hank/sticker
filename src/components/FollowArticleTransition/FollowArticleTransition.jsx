@@ -277,10 +277,14 @@ function FollowArticleTransition({ sourceElement, apiRef, onClosed, onProgress }
 
     apiRef.current = {
       close: () => {
-        if (!expansionTimeline || isClosing) return
+        if (isClosing) return
         isClosing = true
         sourceElement.removeEventListener('scroll', updateProgress)
-        expansionTimeline.reverse()
+        if (expansionTimeline) {
+          expansionTimeline.reverse()
+        } else {
+          followTimeline.reverse()
+        }
       },
     }
 

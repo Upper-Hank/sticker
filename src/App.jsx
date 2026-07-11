@@ -964,11 +964,12 @@ function DesktopApp() {
     const handlePopState = () => {
       const nextArticleIndex = getArticleIndex()
       if (articleIndex == null || (Number.isInteger(nextArticleIndex) && nextArticleIndex >= 0)) return
-      finishArticleClose()
+      setIsArticleClosing(true)
+      articleTransitionApiRef.current?.close()
     }
     window.addEventListener('popstate', handlePopState)
     return () => window.removeEventListener('popstate', handlePopState)
-  }, [articleIndex, finishArticleClose])
+  }, [articleIndex])
 
   return (
     <div className={`app${articleIndex != null ? ' app--article-open' : ''}`} ref={appRef}>
