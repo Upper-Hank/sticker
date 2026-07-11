@@ -227,3 +227,6 @@
     bottom: 16px;
   }
 }
+.app:not(.app--article-open) .ticket-article {
+  display: none !important;
+}

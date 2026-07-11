@@ -116,7 +116,7 @@ function MobileView() {
   const openArticle = () => {
     const index = ticketIndexRef.current
     if (index == null) return
-    window.history.pushState({ ...window.history.state, inAppArticle: true, mobileLayer: 'article', ticketIndex: index }, getArticlePath(tickets[index].id))
+    window.history.pushState({ ...window.history.state, inAppArticle: true, mobileLayer: 'article', ticketIndex: index }, '', getArticlePath(tickets[index].id))
     setArticleProgress(0)
     setArticleControlState('hidden')
     articleIndexRef.current = index

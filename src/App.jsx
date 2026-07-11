@@ -35,8 +35,7 @@ function App() {
 
   useEffect(() => {
     if (!isKnownPath()) window.history.replaceState({ route: 'home' }, '', '/')
-
-    const syncRoute = () => setDirectArticleIndex(getArticleIndex())
+    const syncRoute = () => queueMicrotask(() => setDirectArticleIndex(getArticleIndex()))
     window.addEventListener('popstate', syncRoute)
     return () => window.removeEventListener('popstate', syncRoute)
   }, [])
@@ -943,11 +942,7 @@ function DesktopApp() {
 
     pendingArticleRef.current = null
     cardInteraction.cancelAll()
-    window.history.pushState(
-      { inAppArticle: true, articleIndex: pending.index },
-      '',
-      getArticlePath(tickets[pending.index].id),
-    )
+    window.history.pushState({ inAppArticle: true, articleIndex: pending.index }, '', getArticlePath(tickets[pending.index].id))
     setArticleProgress(0)
     setArticleTransition({ sourceElement: pending.sourceElement })
     setArticleIndex(pending.index)
@@ -958,19 +953,6 @@ function DesktopApp() {
     window.history.back()
   }
 
-  useEffect(() => {
-    const handlePopState = () => {
-      if (articleIndex == null || getArticleIndex() >= 0) return
-      const closeArticle = articleTransitionApiRef.current?.close
-      if (!closeArticle) return
-      setIsArticleClosing(true)
-      closeArticle()
-    }
-
-    window.addEventListener('popstate', handlePopState)
-    return () => window.removeEventListener('popstate', handlePopState)
-  }, [articleIndex])
-
   const finishArticleClose = useCallback(() => {
     setArticleIndex(null)
     setArticleProgress(0)
@@ -978,8 +960,18 @@ function DesktopApp() {
     setIsArticleClosing(false)
   }, [])
 
+  useEffect(() => {
+    const handlePopState = () => {
+      const nextArticleIndex = getArticleIndex()
+      if (articleIndex == null || (Number.isInteger(nextArticleIndex) && nextArticleIndex >= 0)) return
+      finishArticleClose()
+    }
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+  }, [articleIndex, finishArticleClose])
+
   return (
-    <div className="app" ref={appRef}>
+    <div className={`app${articleIndex != null ? ' app--article-open' : ''}`} ref={appRef}>
       <div className="stage" ref={stageRef}>
 
         {/* ===== Grid ===== */}
