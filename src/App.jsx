@@ -41,7 +41,7 @@ function App() {
     return () => window.removeEventListener('popstate', syncRoute)
   }, [])
 
-  if (directArticleIndex >= 0 && !window.history.state?.inAppArticle) {
+  if (Number.isInteger(directArticleIndex) && directArticleIndex >= 0 && !window.history.state?.inAppArticle) {
     const ticket = tickets[directArticleIndex]
     return <DirectArticle article={articlesByTicketId[ticket.id]} />
   }
