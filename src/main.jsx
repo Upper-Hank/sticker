@@ -1,11 +1,12 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+import { RouterProvider } from 'react-router-dom'
 import '@fontsource/ibm-plex-sans/latin-400.css'
 import '@fontsource/ibm-plex-sans/latin-700.css'
 import '@fontsource/ibm-plex-serif/latin-400.css'
 import '@fontsource/ibm-plex-serif/latin-400-italic.css'
 import './index.css'
-import App from './App.jsx'
+import router from './router.jsx'
 
 if ('scrollRestoration' in window.history) {
   window.history.scrollRestoration = 'manual'
@@ -18,6 +19,6 @@ window.addEventListener('pageshow', () => {
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <App />
+    <RouterProvider router={router} />
   </StrictMode>,
 )
