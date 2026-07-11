@@ -1,4 +1,4 @@
-import { useCallback, useRef, useLayoutEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useRef, useLayoutEffect, useMemo, useState } from 'react'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { ScrollToPlugin } from 'gsap/ScrollToPlugin'
@@ -13,6 +13,8 @@ import Ticket from './components/Ticket/Ticket'
 import AnimationController from './components/AnimationController/AnimationController'
 import MobileView from './components/MobileView/MobileView'
 import FollowArticleTransition from './components/FollowArticleTransition/FollowArticleTransition'
+import DirectArticle from './articles/DirectArticle'
+import { getArticleIndex, getArticlePath, isKnownPath } from './utils/routes'
 import { useAnimationState } from './hooks/useAnimationState'
 import { useIsMobile } from './hooks/useIsMobile'
 import { getPathLength } from './utils/pathCache'
@@ -29,6 +31,20 @@ const READY_PROGRESS = 0.995
 
 function App() {
   const isMobile = useIsMobile()
+  const [directArticleIndex, setDirectArticleIndex] = useState(() => getArticleIndex())
+
+  useEffect(() => {
+    if (!isKnownPath()) window.history.replaceState({ route: 'home' }, '', '/')
+
+    const syncRoute = () => setDirectArticleIndex(getArticleIndex())
+    window.addEventListener('popstate', syncRoute)
+    return () => window.removeEventListener('popstate', syncRoute)
+  }, [])
+
+  if (directArticleIndex >= 0 && !window.history.state?.inAppArticle) {
+    const ticket = tickets[directArticleIndex]
+    return <DirectArticle article={articlesByTicketId[ticket.id]} />
+  }
 
   if (isMobile) {
     return <MobileView />
@@ -913,6 +929,7 @@ function DesktopApp() {
       return
     }
     if (stateRef.current.phase !== 'ticket') return
+    window.history.pushState({ inAppArticle: true, articleIndex: index }, '', getArticlePath(tickets[index].id))
     cardInteraction.cancelAll()
     setArticleProgress(0)
     setArticleTransition({ sourceElement })
@@ -926,6 +943,11 @@ function DesktopApp() {
 
     pendingArticleRef.current = null
     cardInteraction.cancelAll()
+    window.history.pushState(
+      { inAppArticle: true, articleIndex: pending.index },
+      '',
+      getArticlePath(tickets[pending.index].id),
+    )
     setArticleProgress(0)
     setArticleTransition({ sourceElement: pending.sourceElement })
     setArticleIndex(pending.index)
@@ -933,11 +955,21 @@ function DesktopApp() {
 
   const handleArticleBack = () => {
     if (isArticleClosing) return
-    const closeArticle = articleTransitionApiRef.current?.close
-    if (!closeArticle) return
-    setIsArticleClosing(true)
-    closeArticle()
+    window.history.back()
   }
+
+  useEffect(() => {
+    const handlePopState = () => {
+      if (articleIndex == null || getArticleIndex() >= 0) return
+      const closeArticle = articleTransitionApiRef.current?.close
+      if (!closeArticle) return
+      setIsArticleClosing(true)
+      closeArticle()
+    }
+
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+  }, [articleIndex])
 
   const finishArticleClose = useCallback(() => {
     setArticleIndex(null)

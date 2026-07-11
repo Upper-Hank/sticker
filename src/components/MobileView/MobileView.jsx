@@ -9,6 +9,7 @@ import tickets from '../../data/tickets.json'
 import articlesByTicketId from '../../articles/registry'
 import { getPathLength } from '../../utils/pathCache'
 import { createCardInteraction } from '../../animations/cardInteraction'
+import { getArticleIndex, getArticlePath } from '../../utils/routes'
 import './MobileView.css'
 
 gsap.registerPlugin(Draggable, InertiaPlugin)
@@ -115,7 +116,7 @@ function MobileView() {
   const openArticle = () => {
     const index = ticketIndexRef.current
     if (index == null) return
-    window.history.pushState({ ...window.history.state, mobileLayer: 'article', ticketIndex: index }, '')
+    window.history.pushState({ ...window.history.state, inAppArticle: true, mobileLayer: 'article', ticketIndex: index }, getArticlePath(tickets[index].id))
     setArticleProgress(0)
     setArticleControlState('hidden')
     articleIndexRef.current = index
@@ -130,10 +131,10 @@ function MobileView() {
   }, [])
 
   useEffect(() => {
-    window.history.replaceState({ ...window.history.state, mobileLayer: 'home' }, '')
+    window.history.replaceState({ ...window.history.state, mobileLayer: 'home' }, '/')
 
     const handlePopState = (event) => {
-      const layer = event.state?.mobileLayer ?? 'home'
+      const layer = getArticleIndex() >= 0 ? (event.state?.mobileLayer ?? 'article') : (event.state?.mobileLayer ?? 'home')
 
       if (articleIndexRef.current != null && layer !== 'article') {
         articleTransitionApiRef.current?.close()
